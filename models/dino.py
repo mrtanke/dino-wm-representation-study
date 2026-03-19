@@ -4,10 +4,11 @@ import torch.nn as nn
 torch.hub._validate_not_a_forked_repo=lambda a,b,c: True
 
 class DinoV2Encoder(nn.Module):
-    def __init__(self, name, feature_key):
+    def __init__(self, name, feature_key, repo_ref="ebc1cba"):
         super().__init__()
         self.name = name
-        self.base_model = torch.hub.load("facebookresearch/dinov2", name)
+        self.repo_ref = repo_ref
+        self.base_model = torch.hub.load(f"facebookresearch/dinov2:{repo_ref}", name)
         self.feature_key = feature_key
         self.emb_dim = self.base_model.num_features
         if feature_key == "x_norm_patchtokens":

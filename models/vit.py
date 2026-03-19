@@ -98,9 +98,24 @@ class Transformer(nn.Module):
         return self.norm(x)
     
 class ViTPredictor(nn.Module):
-    def __init__(self, *, num_patches, num_frames, dim, depth, heads, mlp_dim, pool='cls', dim_head=64, dropout=0., emb_dropout=0.):
+    def __init__(
+        self,
+        *,
+        num_patches,
+        num_frames,
+        dim,
+        depth,
+        heads,
+        mlp_dim,
+        pool='cls',
+        dim_head=64,
+        dropout=0.,
+        emb_dropout=0.,
+        output_mode="deterministic",
+    ):
         super().__init__()
         assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
+        assert output_mode in {"deterministic", "gaussian"}, f"Unsupported output mode: {output_mode}"
         
         # update params for adding causal attention masks
         global NUM_FRAMES, NUM_PATCHES
@@ -111,10 +126,22 @@ class ViTPredictor(nn.Module):
         self.dropout = nn.Dropout(emb_dropout)
         self.transformer = Transformer(dim, depth, heads, dim_head, mlp_dim, dropout)
         self.pool = pool
+        self.output_mode = output_mode
+        self.is_stochastic = output_mode == "gaussian"
+        if self.is_stochastic:
+            self.output_head = nn.Linear(dim, 2 * dim)
+        else:
+            self.output_head = nn.Identity()
 
     def forward(self, x): # x: (b, window_size * H/patch_size * W/patch_size, 384)
         b, n, _ = x.shape
         x = x + self.pos_embedding[:, :n]
         x = self.dropout(x) 
         x = self.transformer(x) 
+        output_head = getattr(self, "output_head", None)
+        if output_head is not None:
+            x = output_head(x)
+        if getattr(self, "is_stochastic", False):
+            mu, logvar = torch.chunk(x, 2, dim=-1)
+            return mu, logvar
         return x

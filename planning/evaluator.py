@@ -27,6 +27,7 @@ class PlanEvaluator:  # evaluator for planning
         seed,
         preprocessor,
         n_plot_samples,
+        plot_rollouts=True,
     ):
         self.obs_0 = obs_0
         self.obs_g = obs_g
@@ -38,6 +39,7 @@ class PlanEvaluator:  # evaluator for planning
         self.seed = seed
         self.preprocessor = preprocessor
         self.n_plot_samples = n_plot_samples
+        self.plot_rollouts = plot_rollouts
         self.device = next(wm.parameters()).device
 
         self.plot_full = False  # plot all frames or frames after frameskip
@@ -128,7 +130,7 @@ class PlanEvaluator:  # evaluator for planning
         )
 
         # plot trajs
-        if self.wm.decoder is not None:
+        if self.plot_rollouts and self.wm.decoder is not None:
             i_visuals = self.wm.decode_obs(i_z_obses)[0]["visual"]
             i_visuals = self._mask_traj(
                 i_visuals, action_len + 1

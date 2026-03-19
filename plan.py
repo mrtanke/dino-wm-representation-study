@@ -129,7 +129,8 @@ class PlanWorkspace:
         self.device = next(wm.parameters()).device
 
         # have different seeds for each planning instances
-        self.eval_seed = [cfg_dict["seed"] * n + 1 for n in range(cfg_dict["n_evals"])]
+        base_seed = int(cfg_dict["seed"])
+        self.eval_seed = [base_seed + n + 1 for n in range(cfg_dict["n_evals"])]
         print("eval_seed: ", self.eval_seed)
         self.n_evals = cfg_dict["n_evals"]
         self.goal_source = cfg_dict["goal_source"]
@@ -167,6 +168,7 @@ class PlanWorkspace:
             seed=self.eval_seed,
             preprocessor=self.data_preprocessor,
             n_plot_samples=self.cfg_dict["n_plot_samples"],
+            plot_rollouts=self.cfg_dict.get("plot_rollouts", True),
         )
 
         if self.wandb_run is None or isinstance(
@@ -333,7 +335,10 @@ class PlanWorkspace:
             actions=actions_init,
         )
         logs, successes, _, _ = self.evaluator.eval_actions(
-            actions.detach(), action_len, save_video=True, filename="output_final"
+            actions.detach(),
+            action_len,
+            save_video=self.cfg_dict.get("save_video", True),
+            filename="output_final",
         )
         logs = {f"final_eval/{k}": v for k, v in logs.items()}
         self.wandb_run.log(logs)

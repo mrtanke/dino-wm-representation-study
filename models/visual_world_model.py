@@ -22,6 +22,9 @@ class VWorldModel(nn.Module):
         train_encoder=True,
         train_predictor=False,
         train_decoder=True,
+        stochastic_logvar_min=-5.0,
+        stochastic_logvar_max=5.0,
+        stochastic_mse_weight=0.1,
     ):
         super().__init__()
         self.num_hist = num_hist
@@ -34,6 +37,9 @@ class VWorldModel(nn.Module):
         self.train_encoder = train_encoder
         self.train_predictor = train_predictor
         self.train_decoder = train_decoder
+        self.stochastic_logvar_min = stochastic_logvar_min
+        self.stochastic_logvar_max = stochastic_logvar_max
+        self.stochastic_mse_weight = stochastic_mse_weight
         self.num_action_repeat = num_action_repeat
         self.num_proprio_repeat = num_proprio_repeat
         self.proprio_dim = proprio_dim * num_proprio_repeat 
@@ -66,6 +72,9 @@ class VWorldModel(nn.Module):
         self.decoder_criterion = nn.MSELoss()
         self.decoder_latent_loss_weight = 0.25
         self.emb_criterion = nn.MSELoss()
+        self.predictor_is_stochastic = (
+            self.predictor is not None and getattr(self.predictor, "is_stochastic", False)
+        )
 
     def train(self, mode=True):
         super().train(mode)
@@ -138,13 +147,34 @@ class VWorldModel(nn.Module):
         input : z: (b, num_hist, num_patches, emb_dim)
         output: z: (b, num_hist, num_patches, emb_dim)
         """
+        z_pred, _, _ = self.predict_with_stats(z)
+        return z_pred
+
+    def predict_with_stats(self, z):  # in embedding space
+        """
+        input : z: (b, num_hist, num_patches, emb_dim)
+        output: z_pred: (b, num_hist, num_patches, emb_dim)
+                mu/logvar: tensors or None
+        """
         T = z.shape[1]
         # reshape to a batch of windows of inputs
         z = rearrange(z, "b t p d -> b (t p) d")
         # (b, num_hist * num_patches per img, emb_dim)
-        z = self.predictor(z)
-        z = rearrange(z, "b (t p) d -> b t p d", t=T)
-        return z
+        pred_out = self.predictor(z)
+        if self.predictor_is_stochastic:
+            mu, logvar = pred_out
+            mu = rearrange(mu, "b (t p) d -> b t p d", t=T)
+            logvar = rearrange(logvar, "b (t p) d -> b t p d", t=T)
+            return mu, mu, logvar
+        z = rearrange(pred_out, "b (t p) d -> b t p d", t=T)
+        return z, None, None
+
+    def gaussian_nll(self, mu, logvar, target):
+        logvar = torch.clamp(logvar, self.stochastic_logvar_min, self.stochastic_logvar_max)
+        var = torch.exp(logvar)
+        nll = ((target - mu) ** 2 / var + logvar).mean()
+        mse = self.emb_criterion(mu, target)
+        return nll + self.stochastic_mse_weight * mse, nll, mse, logvar
 
     def decode(self, z):
         """
@@ -203,7 +233,7 @@ class VWorldModel(nn.Module):
         visual_tgt = obs['visual'][:, self.num_pred :, ...]  # (b, num_hist, 3, img_size, img_size)
 
         if self.predictor is not None:
-            z_pred = self.predict(z_src)
+            z_pred, z_mu, z_logvar = self.predict_with_stats(z_src)
             if self.decoder is not None:
                 obs_pred, diff_pred = self.decode(
                     z_pred.detach()
@@ -221,27 +251,48 @@ class VWorldModel(nn.Module):
 
             # Compute loss for visual, proprio dims (i.e. exclude action dims)
             if self.concat_dim == 0:
-                z_visual_loss = self.emb_criterion(z_pred[:, :, :-2, :], z_tgt[:, :, :-2, :].detach())
-                z_proprio_loss = self.emb_criterion(z_pred[:, :, -2, :], z_tgt[:, :, -2, :].detach())
-                z_loss = self.emb_criterion(z_pred[:, :, :-1, :], z_tgt[:, :, :-1, :].detach())
+                z_visual_pred = z_pred[:, :, :-2, :]
+                z_proprio_pred = z_pred[:, :, -2, :]
+                z_latent_pred = z_pred[:, :, :-1, :]
+                z_visual_tgt = z_tgt[:, :, :-2, :].detach()
+                z_proprio_tgt = z_tgt[:, :, -2, :].detach()
+                z_latent_tgt = z_tgt[:, :, :-1, :].detach()
+                if self.predictor_is_stochastic:
+                    z_visual_loss = self.emb_criterion(z_visual_pred, z_visual_tgt)
+                    z_proprio_loss = self.emb_criterion(z_proprio_pred, z_proprio_tgt)
+                    z_loss, z_nll_loss, z_mse_loss, z_logvar = self.gaussian_nll(
+                        z_mu[:, :, :-1, :], z_logvar[:, :, :-1, :], z_latent_tgt
+                    )
+                else:
+                    z_visual_loss = self.emb_criterion(z_visual_pred, z_visual_tgt)
+                    z_proprio_loss = self.emb_criterion(z_proprio_pred, z_proprio_tgt)
+                    z_loss = self.emb_criterion(z_latent_pred, z_latent_tgt)
             elif self.concat_dim == 1:
-                z_visual_loss = self.emb_criterion(
-                    z_pred[:, :, :, :-(self.proprio_dim + self.action_dim)], \
-                    z_tgt[:, :, :, :-(self.proprio_dim + self.action_dim)].detach()
-                )
-                z_proprio_loss = self.emb_criterion(
-                    z_pred[:, :, :, -(self.proprio_dim + self.action_dim): -self.action_dim], 
-                    z_tgt[:, :, :, -(self.proprio_dim + self.action_dim): -self.action_dim].detach()
-                )
-                z_loss = self.emb_criterion(
-                    z_pred[:, :, :, :-self.action_dim], 
-                    z_tgt[:, :, :, :-self.action_dim].detach()
-                )
+                z_visual_pred = z_pred[:, :, :, :-(self.proprio_dim + self.action_dim)]
+                z_proprio_pred = z_pred[:, :, :, -(self.proprio_dim + self.action_dim): -self.action_dim]
+                z_latent_pred = z_pred[:, :, :, :-self.action_dim]
+                z_visual_tgt = z_tgt[:, :, :, :-(self.proprio_dim + self.action_dim)].detach()
+                z_proprio_tgt = z_tgt[:, :, :, -(self.proprio_dim + self.action_dim): -self.action_dim].detach()
+                z_latent_tgt = z_tgt[:, :, :, :-self.action_dim].detach()
+                z_visual_loss = self.emb_criterion(z_visual_pred, z_visual_tgt)
+                z_proprio_loss = self.emb_criterion(z_proprio_pred, z_proprio_tgt)
+                if self.predictor_is_stochastic:
+                    z_loss, z_nll_loss, z_mse_loss, z_logvar = self.gaussian_nll(
+                        z_mu[:, :, :, :-self.action_dim],
+                        z_logvar[:, :, :, :-self.action_dim],
+                        z_latent_tgt,
+                    )
+                else:
+                    z_loss = self.emb_criterion(z_latent_pred, z_latent_tgt)
 
             loss = loss + z_loss
             loss_components["z_loss"] = z_loss
             loss_components["z_visual_loss"] = z_visual_loss
             loss_components["z_proprio_loss"] = z_proprio_loss
+            if self.predictor_is_stochastic:
+                loss_components["z_nll_loss"] = z_nll_loss
+                loss_components["z_mse_loss"] = z_mse_loss
+                loss_components["z_logvar_mean"] = z_logvar.mean()
         else:
             visual_pred = None
             z_pred = None

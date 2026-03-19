@@ -1,0 +1,31 @@
+defaults:
+  - _self_
+  - planner: mpc_cem
+  - override hydra/launcher: basic
+
+hydra:
+  run:
+    dir: plan_outputs/${now:%Y%m%d%H%M%S}_${replace_slash:${model_name}}_gH${goal_H}
+  sweep:
+    dir: plan_outputs/${now:%Y%m%d%H%M%S}_${replace_slash:${model_name}}_gH${goal_H}
+    subdir: ${hydra.job.num}
+
+ckpt_base_path: ./checkpoints
+model_name: null
+model_epoch: latest
+
+seed: 99
+n_evals: 5
+goal_source: 'random_state'
+goal_H: 5
+n_plot_samples: 2
+plot_rollouts: true
+save_video: true
+
+debug_dset_init: False
+
+objective:
+  _target_: planning.objectives.create_objective_fn
+  alpha: 0
+  base: 2
+  mode: last

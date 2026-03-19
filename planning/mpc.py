@@ -26,6 +26,7 @@ class MPCPlanner(BasePlanner):
         wandb_run,
         logging_prefix="mpc",
         log_filename="logs.json",
+        save_video=True,
         **kwargs,
     ):
         super().__init__(
@@ -41,6 +42,7 @@ class MPCPlanner(BasePlanner):
         self.max_iter = np.inf if max_iter is None else max_iter
         self.n_taken_actions = n_taken_actions
         self.logging_prefix = logging_prefix
+        self.save_video = save_video
         sub_planner["_target_"] = sub_planner["target"]
         self.sub_planner = hydra.utils.instantiate(
             sub_planner,
@@ -104,7 +106,7 @@ class MPCPlanner(BasePlanner):
                 action_so_far,
                 self.action_len,
                 filename=f"plan{self.iter}",
-                save_video=True,
+                save_video=self.save_video,
             )
             new_successes = successes & ~self.is_success  # Identify new successes
             self.is_success = (

@@ -22,6 +22,16 @@ Then answer two practical questions for action-conditioned world modeling on Poi
 
 The goal is not to rebuild the whole paper from scratch, but to produce a defensible course-project study with a clean ablation matrix, reproducible scripts, and conclusions that do not overclaim from weak evaluation.
 
+For the full roadmap beyond the current experiment snapshot, see:
+
+- [docs/COURSE_PROJECT_PLAN.md](/C:/Users/zack/Documents/GNN3/docs/COURSE_PROJECT_PLAN.md)
+
+That document now separates:
+
+- the minimum defensible course-project scope
+- the stronger empirical validation phase
+- the longer-horizon expanded representation study
+
 ## Current Status
 
 ### Completed
