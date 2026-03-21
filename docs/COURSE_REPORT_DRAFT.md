@@ -257,6 +257,8 @@ This changes the earlier single-seed interpretation. The single-seed result had 
 - deterministic dynamics are currently more stable than Gaussian dynamics under this setup
 - the Gaussian extension improves training likelihood objectives, but that does not translate into better planning quality here
 
+An important evaluation caveat also becomes clear here. The fact that all final `success_rate` values stayed at `1.0` under `n_evals = 3` does not mean the models were equally good. It means the metric was too coarse under such a small evaluation set. This was the first motivation for the larger-sample follow-up.
+
 ### 6.9 Larger-Sample Planning Follow-Up
 
 The main weakness of the three-seed formal matrix is that planning still used only `n_evals = 3`. That made `success_rate` saturate at `1.0` for all configurations, which limited how informative that metric could be.
@@ -311,6 +313,29 @@ This reinforces the earlier three-seed message: under the current PointMaze setu
 
 This is a more defensible result for the course report because it is based on repeated runs rather than a single seed.
 
+### 6.10 Metric Saturation: Why Increasing `n_evals` Helped but Did Not Fully Solve the Problem
+
+At first, the natural explanation for repeated `success_rate = 1.0` results was simply that `n_evals = 3` was too small. That diagnosis was correct, but only partially complete.
+
+After increasing evaluation coverage through direct `n_evals = 10` runs or two-shard `n_evals = 5 + 5` follow-up, we observed a second issue:
+
+- `success_rate` often still remained saturated at `1.0`
+- meanwhile, `mean_state_dist` still showed meaningful variation across models
+
+This means that the evaluation problem has two layers:
+
+1. small `n_evals` makes `success_rate` statistically weak
+2. even with a larger sample, the binary success metric is still coarse on PointMaze
+
+The most likely reason is that the current PointMaze task and success threshold are not difficult enough to separate models cleanly once they cross the success boundary. In that regime, `success_rate` becomes a weak discriminator, while `mean_state_dist` continues to reflect how close or how robust the planning outcome really is.
+
+Therefore, the correct reporting strategy is:
+
+- treat `success_rate` as a coarse success indicator
+- use `mean_state_dist` as the primary planning comparison metric
+
+This is the reason the later analysis in this report emphasizes final state distance rather than raw success rate.
+
 ## 7. Discussion
 
 ### 7.1 What Has Been Demonstrated
@@ -340,6 +365,8 @@ Those claims require:
 
 One concrete example is the larger-sample planning comparison. The project now has a meaningful seed-0 larger-sample follow-up, but it does not yet have the same larger-sample evaluation for all seeds and all four model combinations. Without that, the stronger statistical version of the representation comparison remains incomplete.
 
+Another important limit is metric saturation. Increasing `n_evals` improved reliability, but it did not fully fix the fact that PointMaze often yields `success_rate = 1.0` across multiple model variants. For this reason, stronger claims should not be based primarily on binary success.
+
 ### 7.3 Main Engineering Lessons
 
 Three practical lessons stood out:
@@ -357,6 +384,7 @@ These observations are useful implementation takeaways for future world-model pr
 - CLS uses no decoder, so decoder-side comparisons are not available.
 - DINOv3 and V-JEPA integration was not implemented in this phase.
 - The larger-sample planning reevaluation is still incomplete; it now covers all four seed-0 configurations and seed-1 deterministic patch, but not yet the full seed-1 to seed-2 matrix.
+- Even after larger-sample follow-up, `success_rate` remains partially saturated on PointMaze, so the metric is weaker than `mean_state_dist`.
 
 ## 8.1 Current Progress
 
@@ -376,26 +404,48 @@ Not yet implemented:
 
 - additional representation families such as DINOv3, V-JEPA, DINO-Tok, and VFM-VAE
 
-Estimated remaining time for the current reevaluation plan:
+Estimated remaining time from the current project state:
 
-- about `5` to `8` hours
+- about `0.5` to `1.0` hour if the project stops after the patch-focused larger-sample reevaluation and moves directly to final cleanup
+- about `1.5` to `3.0` hours if the optional seed-2 CLS larger-sample follow-up is also completed
 
 This estimate assumes:
 
-- about `1.5` to `2.5` hours for the remaining seed-1 configurations
-- about `2.0` to `3.0` hours for seed 2
+- about `1.0` to `2.0` hours for the remaining optional seed-2 CLS runs
 - about `0.5` to `1.0` hour for aggregation and final report cleanup
 
 ## 9. Future Work
 
 The next steps are clear:
 
-1. Finish the larger-sample planning follow-up for `CLS + gaussian` on seed 0.
-2. Extend the same larger-sample follow-up to seeds 1 and 2.
-3. Aggregate the larger-sample planning metrics before drawing stronger representation conclusions.
+1. Decide whether the optional seed-2 CLS larger-sample follow-up is worth the remaining time budget.
+2. Aggregate the completed larger-sample planning metrics before drawing stronger representation conclusions.
+3. If more evaluation effort is available, increase `n_evals` further or evaluate on a harder environment such as PushT or Wall.
 4. Add a third representation, preferably DINOv3 or V-JEPA.
 5. Study uncertainty more directly by plotting predicted variance over rollout horizon.
 6. If needed, design a CLS-compatible decoder for visualization.
+
+### 9.1 Is It Worth Increasing `n_evals` Further?
+
+Increasing `n_evals` beyond the current follow-up would help, but only up to a point.
+
+It is worth doing if the goal is:
+
+- to reduce variance in `mean_state_dist`
+- to make seed-level planning summaries more stable
+- to check whether some currently close comparisons are just noise
+
+It is less worth doing if the goal is:
+
+- to make `success_rate` stop saturating on PointMaze
+
+The current evidence suggests that simply raising `n_evals` is unlikely to fully solve success-rate saturation on this environment. It will improve reliability, but it probably will not make `success_rate` the best comparison metric. In practical terms, increasing `n_evals` is still useful for `mean_state_dist`, but not a complete fix for the binary success metric.
+
+Given the current state of the project, the best cost-benefit choice is:
+
+- do not launch a broad new `n_evals` expansion for every model
+- finish the most relevant remaining larger-sample comparisons if they complete cleanly
+- then finalize the report using `mean_state_dist` as the main metric
 
 ## 10. Reproducibility
 
@@ -415,6 +465,8 @@ The repository now includes a compact reproducibility path for the implemented e
 This project successfully turned the original DINO-WM course-project idea into a working prototype. We reproduced the pretrained PointMaze planning baseline, ran deterministic DINOv2 patch and CLS training sanity checks, implemented a Gaussian latent transition model, and verified that the stochastic checkpoint can also be used for planning.
 
 The current stage should be viewed as a validated implementation milestone rather than a finished benchmark study. Still, the two central project questions are now represented by runnable code and initial experimental evidence, including a completed three-seed formal matrix and a partially completed larger-sample planning follow-up. This provides a solid base for final course-project reporting.
+
+The key methodological lesson is that evaluation quality matters as much as model design. Increasing `n_evals` was necessary because `n_evals = 3` made `success_rate` too weak, but the larger-sample follow-up also revealed that success-rate saturation on PointMaze is a metric-design issue, not only a sample-size issue. As a result, the most defensible interpretation of this project relies primarily on `mean_state_dist`, with `success_rate` treated only as a coarse indicator.
 
 ## Appendix: Current Experiment Table
 

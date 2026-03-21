@@ -297,13 +297,16 @@ Completed:
 - `seed0 patch + gaussian`
 - `seed0 CLS + gaussian`
 - `seed1 patch + deterministic`
+- `seed1 patch + gaussian`
+- `seed1 CLS + gaussian`
+- `seed2 patch + deterministic`
+- `seed2 patch + gaussian`
 - `seed1 CLS + deterministic`, shard B only
 
 Pending:
 
-- `seed1 patch + gaussian`
-- `seed1 CLS + gaussian`
-- all four `seed2` settings
+- `seed2 CLS + deterministic`
+- `seed2 CLS + gaussian`
 
 Status:
 
@@ -373,7 +376,7 @@ Current larger-sample results suggest:
 - `mean_state_dist` is more informative than `success_rate`
 - `patch + deterministic` remains strongest overall
 - `CLS + gaussian` can beat `patch + gaussian` on at least some seed-0 follow-up
-- the main open question is whether these patterns remain stable after finishing seed-1 and seed-2 reevaluation
+- the main open question is now whether spending more time on the optional seed-2 CLS follow-up would materially change the report conclusions
 
 ## 8. What Counts as Success
 
@@ -419,16 +422,15 @@ The project becomes ambitious if it additionally includes:
 
 For the current plan, not the long-horizon vision:
 
-- remaining `seed1` larger-sample follow-up after dropping `seed1 CLS + deterministic` shard-A reruns:
-  about `0.5` to `1.0` hour
-- full `seed2` larger-sample follow-up:
-  about `1.0` to `1.5` hours
+- optional seed-2 CLS follow-up:
+  about `1.0` to `2.0` hours
 - aggregation and document cleanup:
   about `0.5` to `1.0` hour
 
 Estimated total remaining time for the current deliverable:
 
-- about `2.0` to `3.5` hours
+- about `1.5` to `3.0` hours if seed-2 CLS follow-up is still pursued
+- about `0.5` to `1.0` hour if the project closes after patch-focused reevaluation
 
 For the extended vision:
 
@@ -443,3 +445,47 @@ For the extended vision:
 3. Present `DINOv3`, `V-JEPA`, `DINO-Tok`, and `VFM-VAE` as future extensions unless they are actually implemented and run.
 4. Use `mean_state_dist` as the primary planning comparison metric.
 5. Keep the final write-up conservative about what the data currently supports.
+6. Next active target: choose between optional `seed2 CLS` follow-up and final report cleanup.
+
+## 12. Collaboration Paths
+
+The project is now at a stage where several different technical directions are all reasonable. A collaborator does not need to pick up the whole pipeline to make progress.
+
+### Path A: Final Evaluation and Metric Quality
+
+Examples:
+
+- monitor and finish the remaining optional `seed2 CLS` larger-sample follow-up if it remains stable
+- test whether a slightly different evaluation setting makes the comparison sharper
+- verify whether the report should stop at the current patch-focused reevaluation or still include more CLS follow-up
+- summarize planning outcomes with `mean_state_dist` as the main metric
+
+### Path B: Expanded Encoder Route
+
+Examples:
+
+- try one additional representation family, preferably `DINOv3` or `V-JEPA`
+- focus on a minimum viable path:
+  - encoder integration
+  - latent compatibility
+  - one sanity training run
+  - one sanity planning run
+- record what extra engineering work that encoder requires relative to DINOv2
+
+### Path C: Results Consolidation and Final Writing
+
+Examples:
+
+- build one clean final table for the formal matrix
+- build one clean final table for the larger-sample follow-up
+- compute and verify shard-based averages
+- align the README, tracker, execution log, and report wording
+- refine the abstract, conclusion, and limitations
+
+### Path D: Reproducibility and Sync
+
+Examples:
+
+- verify that scripts and commands still match the tracker
+- prepare a short rerun guide for the main completed experiments
+- sync the latest docs and status updates to the collaboration repository

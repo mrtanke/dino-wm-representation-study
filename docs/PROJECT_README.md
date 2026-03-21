@@ -153,6 +153,14 @@ Completed:
   - deterministic patch
   - deterministic CLS
   - Gaussian patch
+  - Gaussian CLS
+- larger-sample seed-1 planning follow-up for:
+  - deterministic patch
+  - Gaussian patch
+  - Gaussian CLS
+- larger-sample seed-2 planning follow-up for:
+  - deterministic patch
+  - Gaussian patch
 
 Partially completed:
 
@@ -160,9 +168,9 @@ Partially completed:
 
 Pending:
 
-- larger-sample seed-0 planning for `CLS + gaussian`
-- larger-sample seed-1 planning for all four configurations
-- larger-sample seed-2 planning for all four configurations
+- remaining larger-sample seed-2 planning for:
+  - `CLS + deterministic`
+  - `CLS + gaussian`
 - third representation such as DINOv3 or V-JEPA
 
 Progress summary:
@@ -173,14 +181,12 @@ Progress summary:
 
 Estimated remaining time:
 
-- `seed0 CLS + gaussian`, two `n_evals=5` shards: about `0.5` to `1.0` hour
-- `seed1`, four models, two shards each: about `2.0` to `3.0` hours
-- `seed2`, four models, two shards each: about `2.0` to `3.0` hours
+- `seed2` CLS larger-sample follow-up, if still pursued: about `1.0` to `2.0` hours
 - results aggregation and doc cleanup: about `0.5` to `1.0` hour
 
 Estimated time to finish the current larger-sample reevaluation plan:
 
-- about `5` to `8` hours total
+- about `1.5` to `3` hours total if the remaining work is limited to optional seed-2 CLS follow-up plus final cleanup
 
 ## Current Sanity Results
 
@@ -244,6 +250,14 @@ Completed larger-sample outputs:
 | L4b | `2026-03-18/20-45-03` | shard B, `n_evals=5`, `seed=5` | 3.3520 |
 | L5a | `2026-03-18/21-12-22` | shard A, `n_evals=5`, `seed=1` | 4.0346 |
 | L5b | `2026-03-18/21-12-22` | shard B, `n_evals=5`, `seed=6` | 4.2033 |
+| L7a | `2026-03-18/22-09-15` | shard A, `n_evals=5`, `seed=1` | 3.2888 |
+| L7b | `2026-03-18/22-09-15` | shard B, `n_evals=5`, `seed=6` | 4.5844 |
+| L8a | `2026-03-18/22-33-51` | shard A, `n_evals=5`, `seed=1` | 3.8905 |
+| L8b | `2026-03-18/22-33-51` | shard B, `n_evals=5`, `seed=6` | 4.0224 |
+| L9a | `2026-03-18/22-54-50` | shard A, `n_evals=5`, `seed=2` | 3.5163 |
+| L9b | `2026-03-18/22-54-50` | shard B, `n_evals=5`, `seed=7` | 3.4006 |
+| L10a | `2026-03-18/23-51-26` | shard A, `n_evals=5`, `seed=2` | 3.4006 |
+| L10b | `2026-03-18/23-51-26` | shard B, `n_evals=5`, `seed=7` | 5.3276 |
 
 Current seed-0 larger-sample picture:
 
@@ -264,18 +278,79 @@ Current seed-1 larger-sample picture:
   only shard B completed so far, `mean_state_dist = 3.9672`
   note:
   shard A was attempted twice but not completed, and this group was later dropped from the larger-sample follow-up plan
+- Gaussian patch:
+  two-shard average over 10 episodes, `mean_state_dist ~= 3.9366`
+- Gaussian CLS:
+  two-shard average over 10 episodes, `mean_state_dist ~= 3.9565`
+
+Current seed-2 larger-sample picture:
+
+- deterministic patch:
+  two-shard average over 10 episodes, `mean_state_dist ~= 3.4584`
+- Gaussian patch:
+  two-shard average over 10 episodes, `mean_state_dist ~= 4.3641`
 
 Practical interpretation:
 
 - larger-sample evaluation does not support the earlier idea that Gaussian patch is better
 - deterministic CLS remains competitive with deterministic patch on PointMaze
 - on seed 0, `CLS + gaussian` is better than `patch + gaussian` but still behind deterministic patch
+- on seed 1, both Gaussian variants are in the same broad range as deterministic patch, but neither overturns the broader formal-matrix conclusion
+- on seed 2, deterministic patch again looks better than patch Gaussian under the larger-sample follow-up
 - `mean_state_dist` remains more informative than `success_rate`
 
 ## Recommended Final Steps
 
 1. Do not continue `seed1 CLS + deterministic` shard-A reruns.
-2. Move on to the remaining larger-sample seed-1 runs if needed.
-3. Complete the larger-sample seed-2 runs if time allows.
+2. Decide whether the optional `seed2 CLS` larger-sample follow-up is worth the remaining time.
+3. Otherwise move straight to final aggregation and report cleanup.
 4. Fill `docs/EXPERIMENT_TRACKER.csv` with the completed reevaluation results.
 5. Polish `docs/COURSE_REPORT_DRAFT.md` into the final submission.
+
+## Collaboration-Friendly Next Steps
+
+For anyone joining the project now, there are several good ways to help without needing to touch the whole codebase at once.
+
+### Documentation and Writing Path
+
+This is a good option if the goal is to strengthen the final submission quickly.
+
+Useful tasks:
+
+- tighten the report language around `success_rate` saturation
+- align the wording across `README`, `PROJECT_README`, and the report draft
+- convert current experimental notes into a cleaner final narrative
+- add a short abstract and a cleaner conclusion section
+
+### Analysis and Table Cleanup Path
+
+This is a good option if the goal is to make the evidence easier to read.
+
+Useful tasks:
+
+- turn the completed larger-sample shard results into one compact summary table
+- check that averages reported in prose match the experiment tracker
+- prepare one final comparison centered on `mean_state_dist`
+- separate `completed`, `partial`, and `optional` evidence clearly
+
+### Optional Experiment Continuation Path
+
+This is a good option if someone wants to keep pushing the empirical side.
+
+Useful tasks:
+
+- monitor the ongoing `seed2 CLS + deterministic` larger-sample run
+- if it ends cleanly, continue the second shard
+- only after that, decide whether `seed2 CLS + gaussian` is still worth the time budget
+
+This path is useful, but no longer the only important one. The current project already has a strong patch-focused larger-sample story.
+
+### Reproducibility and Handoff Path
+
+This is a good option if the goal is to make collaboration smoother.
+
+Useful tasks:
+
+- verify that scripts, tracker rows, checkpoint names, and documented commands all line up
+- add a short rerun guide for the main completed experiments
+- make sure the collaboration repository stays synced with the latest local docs

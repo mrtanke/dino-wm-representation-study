@@ -67,13 +67,16 @@ Completed larger-sample follow-up:
 - `seed0 patch + gaussian`
 - `seed0 CLS + gaussian`
 - `seed1 patch + deterministic`
+- `seed1 patch + gaussian`
+- `seed1 CLS + gaussian`
+- `seed2 patch + deterministic`
+- `seed2 patch + gaussian`
 
 Still pending:
 
 - `seed1 CLS + deterministic`
-- `seed1 patch + gaussian`
-- `seed1 CLS + gaussian`
-- all `seed2` larger-sample follow-up runs
+- `seed2 CLS + deterministic`
+- `seed2 CLS + gaussian`
 
 ### Not Implemented Yet
 
@@ -121,6 +124,14 @@ Completed larger-sample snapshots:
   - two-shard average `mean_state_dist ~= 3.8242`
 - `seed1 patch + deterministic`
   - two-shard average `mean_state_dist ~= 4.1189`
+- `seed1 patch + gaussian`
+  - two-shard average `mean_state_dist ~= 3.9366`
+- `seed1 CLS + gaussian`
+  - two-shard average `mean_state_dist ~= 3.9565`
+- `seed2 patch + deterministic`
+  - two-shard average `mean_state_dist ~= 3.4584`
+- `seed2 patch + gaussian`
+  - two-shard average `mean_state_dist ~= 4.3641`
 
 Current interpretation:
 
@@ -128,18 +139,19 @@ Current interpretation:
 - `patch + deterministic` still looks best overall
 - `CLS + gaussian` looks better than `patch + gaussian` on seed 0
 - the stochastic extension still does not clearly beat the deterministic baseline in planning
+- on the patch side, the larger-sample follow-up now consistently favors deterministic over Gaussian on seeds 0 and 2
 
 ## Estimated Remaining Time
 
 If we continue only the current larger-sample reevaluation plan, the estimated remaining time is:
 
-- `seed1` remaining larger-sample follow-up: about `0.5` to `1.0` hour
-- `seed2` full larger-sample follow-up: about `1.0` to `1.5` hours
+- optional `seed2 CLS` larger-sample follow-up: about `1.0` to `2.0` hours
 - metric aggregation and final doc cleanup: about `0.5` to `1.0` hour
 
 Estimated total remaining time:
 
-- about `2` to `3.5` hours
+- about `1.5` to `3.0` hours if the optional `seed2 CLS` path is still pursued
+- about `0.5` to `1.0` hour if the project closes after the patch-focused reevaluation
 
 This estimate assumes no new model integrations and no major WSL/CUDA instability.
 
@@ -164,6 +176,53 @@ Recommended working rule:
 - do not claim anything from `success_rate=1.0` alone
 - use `mean_state_dist` and larger-sample follow-up as the main planning evidence
 
+## Possible Next Tracks
+
+At this point, several technical directions are all reasonable. They can move in parallel depending on what people want to pick up next.
+
+### Track A: Final Evaluation and Metric Cleanup
+
+Useful work here:
+
+- finish or monitor the remaining optional `seed2 CLS` larger-sample follow-up
+- verify whether the remaining CLS runs are worth keeping or whether the report should stop at the patch-focused reevaluation
+- summarize the larger-sample outcomes using `mean_state_dist` rather than relying on saturated `success_rate`
+- if time allows, test one slightly harder planning setting, such as a stricter evaluation budget or one additional environment like `PushT` or `Wall`
+
+### Track B: Expanded Representation Path
+
+Useful work here:
+
+- prototype one additional encoder family, preferably `DINOv3` or `V-JEPA`
+- aim for the minimum viable integration:
+  - encoder loading
+  - latent shape compatibility
+  - one sanity training run
+  - one sanity planning run
+- document what changes are needed compared with the current DINOv2-based path
+
+### Track C: Results Consolidation and Final Write-Up
+
+Useful work here:
+
+- build one clean final table for the formal 3-seed matrix
+- build one clean final table for the larger-sample follow-up
+- make sure `README`, `PROJECT_README`, `EXECUTION_LOG`, and the report use the same numbers and conclusions
+- tighten the wording around:
+  - `success_rate` saturation
+  - why `mean_state_dist` is the primary metric
+  - what is completed versus what remains optional
+- add a concise abstract, limitations section, and final conclusion paragraph
+
+### Track D: Reproducibility and Repo Handoff
+
+Useful work here:
+
+- verify that the documented commands still match the current scripts
+- prepare a short rerun guide for the main completed experiments
+- make checkpoint names, output folders, and tracker rows easier to cross-reference
+- sync the most important docs and status summaries to the collaboration repositories
+
 ## Checklist
 
 - [x] WSL2 environment setup
@@ -175,10 +234,12 @@ Recommended working rule:
 - [x] Full 3-seed formal matrix
 - [x] Seed-0 larger-sample follow-up
 - [x] Seed-1 patch deterministic larger-sample follow-up
-- [ ] Seed-1 CLS deterministic larger-sample follow-up
-- [ ] Seed-1 patch gaussian larger-sample follow-up
-- [ ] Seed-1 CLS gaussian larger-sample follow-up
-- [ ] Seed-2 larger-sample follow-up for all four settings
+- [x] Seed-1 patch gaussian larger-sample follow-up
+- [x] Seed-1 CLS gaussian larger-sample follow-up
+- [~] Seed-1 CLS deterministic larger-sample follow-up
+  partial result only; shard B completed, shard A dropped after repeated instability
+- [x] Seed-2 patch-focused larger-sample follow-up
+- [ ] Seed-2 CLS larger-sample follow-up
 - [ ] Final larger-sample aggregation table
 - [ ] Final report wording cleanup
 
@@ -186,9 +247,14 @@ Recommended working rule:
 
 If the current reevaluation plan continues without new blockers:
 
-- remaining larger-sample experiments: within `2` to `2.5` hours
+- remaining optional CLS experiments: within `1` to `2` hours
 - final aggregation and document cleanup: within `0.5` to `1.0` hour
-- full current-scope wrap-up: within `2.5` to `3.5` hours
+- full current-scope wrap-up: within `1.5` to `3.0` hours
+
+If the team decides not to pursue the optional seed-2 CLS follow-up, a polished submission-ready version is much closer:
+
+- final documentation and report cleanup: within `0.5` to `1.0` hour
+- stable current-scope submission package: within the same session
 
 ## Acknowledgment
 

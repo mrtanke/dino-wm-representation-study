@@ -690,12 +690,14 @@ Completed:
 - seed-0 Gaussian patch, 2 shards
 - seed-0 Gaussian CLS, 2 shards
 - seed-1 deterministic patch, 2 shards
+- seed-1 Gaussian patch, 2 shards
+- seed-1 Gaussian CLS, 2 shards
+- seed-2 deterministic patch, 2 shards
 
 Not yet completed:
 
-- seed-1 Gaussian patch
-- seed-1 Gaussian CLS
-- all larger-sample runs for seed 2
+- seed-2 deterministic CLS
+- seed-2 Gaussian CLS
 
 ### Seed-1 CLS deterministic follow-up decision
 
@@ -730,7 +732,8 @@ Estimated remaining runtime from the current state:
 
 Estimated total remaining time for the current reevaluation plan:
 
-- about `2.0` to `3.5` hours
+- about `1.5` to `3.0` hours if optional seed-2 CLS follow-up is still pursued
+- about `0.5` to `1.0` hour if the project is closed out after the patch-focused seed-2 reevaluation
 
 Overall project-status interpretation:
 
@@ -746,3 +749,147 @@ Current takeaway from larger-sample PointMaze evaluation:
   - deterministic CLS competitive with deterministic patch
   - CLS Gaussian better than patch Gaussian on seed 0, but still weaker than deterministic patch
   - success rate still saturates, so `mean_state_dist` remains the more useful metric
+
+### Seed-1 Gaussian patch follow-up
+
+#### L7a: Gaussian patch, seed-1 checkpoint, shard A with `n_evals = 5`
+
+Result:
+
+- `final_eval/success_rate = 1.0`
+- `final_eval/mean_state_dist = 3.2887708255`
+- `final_eval/mean_visual_dist = 0.4355797194`
+
+Output:
+
+- `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260321191601_2026-03-18_22-09-15_gH5`
+
+#### L7b: Gaussian patch, seed-1 checkpoint, shard B with `n_evals = 5`
+
+Result:
+
+- `final_eval/success_rate = 1.0`
+- `final_eval/mean_state_dist = 4.5844208286`
+- `final_eval/mean_visual_dist = 0.4742739158`
+
+Output:
+
+- `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260321192724_2026-03-18_22-09-15_gH5`
+
+Estimated combined seed-1 patch Gaussian mean over 10 evaluation episodes:
+
+- `mean_state_dist ~= 3.9366`
+
+Interpretation:
+
+- on seed 1 alone, Gaussian patch is slightly better than deterministic patch in this larger-sample estimate
+- however, this does not overturn the broader project picture because the formal three-seed matrix still favors deterministic patch overall
+- the broader project conclusion still comes from combining formal-matrix evidence and partial larger-sample follow-up, not from one seed alone
+
+### Seed-1 Gaussian CLS follow-up
+
+#### L8a: Gaussian CLS, seed-1 checkpoint, shard A with `n_evals = 5`
+
+Result:
+
+- `final_eval/success_rate = 1.0`
+- `final_eval/mean_state_dist = 3.8904877754`
+- `final_eval/mean_visual_dist = 0.4775451202`
+
+Output:
+
+- `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260321193135_2026-03-18_22-33-51_gH5`
+
+#### L8b: Gaussian CLS, seed-1 checkpoint, shard B with `n_evals = 5`
+
+Result:
+
+- `final_eval/success_rate = 1.0`
+- `final_eval/mean_state_dist = 4.0224406552`
+- `final_eval/mean_visual_dist = 0.4510629252`
+
+Output:
+
+- `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260321193525_2026-03-18_22-33-51_gH5`
+
+Estimated combined seed-1 CLS Gaussian mean over 10 evaluation episodes:
+
+- `mean_state_dist ~= 3.9565`
+
+Interpretation:
+
+- on seed 1, the two Gaussian variants are very close to each other
+- this again suggests that representation differences are not dominating planning quality on this small PointMaze setup
+- the broader project conclusion still depends more on the full formal matrix than on any single larger-sample seed slice
+
+### Seed-2 deterministic patch follow-up
+
+#### L9a: deterministic patch, seed-2 checkpoint, shard A with `n_evals = 5`
+
+Result:
+
+- `final_eval/success_rate = 1.0`
+- `final_eval/mean_state_dist = 3.5162746160`
+- `final_eval/mean_visual_dist = 0.4831715524`
+
+Output:
+
+- `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260321195721_2026-03-18_22-54-50_gH5`
+
+#### L9b: deterministic patch, seed-2 checkpoint, shard B with `n_evals = 5`
+
+Result:
+
+- `final_eval/success_rate = 1.0`
+- `final_eval/mean_state_dist = 3.4006226773`
+- `final_eval/mean_visual_dist = 0.4930421710`
+
+Output:
+
+- `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260321200854_2026-03-18_22-54-50_gH5`
+
+Estimated combined seed-2 patch deterministic mean over 10 evaluation episodes:
+
+- `mean_state_dist ~= 3.4584`
+
+Interpretation:
+
+- seed-2 deterministic patch is more stable than the noisier seed-1 patch follow-up
+- this keeps deterministic patch aligned with the broader formal-matrix conclusion
+- the next most informative optional target is now the seed-2 CLS follow-up, not another patch rerun
+
+### Seed-2 Gaussian patch follow-up
+
+#### L10a: Gaussian patch, seed-2 checkpoint, shard A with `n_evals = 5`
+
+Result:
+
+- `final_eval/success_rate = 1.0`
+- `final_eval/mean_state_dist = 3.4006212832`
+- `final_eval/mean_visual_dist = 0.4930418261`
+
+Output:
+
+- `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260321201836_2026-03-18_23-51-26_gH5`
+
+#### L10b: Gaussian patch, seed-2 checkpoint, shard B with `n_evals = 5`
+
+Result:
+
+- `final_eval/success_rate = 1.0`
+- `final_eval/mean_state_dist = 5.3275554094`
+- `final_eval/mean_visual_dist = 0.4905739796`
+
+Output:
+
+- `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260321202238_2026-03-18_23-51-26_gH5`
+
+Estimated combined seed-2 patch Gaussian mean over 10 evaluation episodes:
+
+- `mean_state_dist ~= 4.3641`
+
+Interpretation:
+
+- on seed 2, Gaussian patch again underperforms deterministic patch in larger-sample planning
+- this makes the patch-side deterministic-vs-Gaussian comparison more consistent across the larger-sample follow-up
+- at this point the patch-focused reevaluation objective is effectively complete
