@@ -693,21 +693,44 @@ Completed:
 
 Not yet completed:
 
-- seed-1 deterministic CLS
 - seed-1 Gaussian patch
 - seed-1 Gaussian CLS
 - all larger-sample runs for seed 2
 
+### Seed-1 CLS deterministic follow-up decision
+
+The larger-sample follow-up for `seed1 CLS + deterministic` was not completed as a full two-shard result.
+
+Attempt history:
+
+- shard A, first attempt:
+  `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260321135816_2026-03-18_21-50-26_gH5`
+- shard B, completed:
+  `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260321161246_2026-03-18_21-50-26_gH5`
+- shard A, retry:
+  `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260321172233_2026-03-18_21-50-26_gH5`
+
+Observed behavior:
+
+- shard A advanced through many `mpc/*` steps in both attempts
+- neither attempt wrote `final_eval`
+- shard B completed normally and wrote `final_eval`
+
+Decision:
+
+- stop this experiment group instead of continuing more shard-A reruns
+- keep shard B as a partial result in the tracker
+- do not report a full 10-episode aggregate for `seed1 CLS + deterministic`
+
 Estimated remaining runtime from the current state:
 
-- seed-0 Gaussian CLS, 2 shards: about `0.5` to `1.0` hour
-- seed-1 larger-sample reevaluation, 8 shards total: about `2.0` to `3.0` hours
-- seed-2 larger-sample reevaluation, 8 shards total: about `2.0` to `3.0` hours
+- remaining seed-1 larger-sample reevaluation excluding dropped `seed1 CLS + deterministic` shard-A reruns: about `0.5` to `1.0` hour
+- seed-2 larger-sample reevaluation: about `1.0` to `1.5` hours
 - final aggregation and documentation pass: about `0.5` to `1.0` hour
 
 Estimated total remaining time for the current reevaluation plan:
 
-- about `5` to `8` hours
+- about `2.0` to `3.5` hours
 
 Overall project-status interpretation:
 

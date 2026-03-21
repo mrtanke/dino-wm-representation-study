@@ -260,6 +260,10 @@ Current seed-1 larger-sample picture:
 
 - deterministic patch:
   two-shard average over 10 episodes, `mean_state_dist ~= 4.1189`
+- deterministic CLS:
+  only shard B completed so far, `mean_state_dist = 3.9672`
+  note:
+  shard A was attempted twice but not completed, and this group was later dropped from the larger-sample follow-up plan
 
 Practical interpretation:
 
@@ -270,7 +274,8 @@ Practical interpretation:
 
 ## Recommended Final Steps
 
-1. Expand each sanity run into a longer training run.
-2. Collect planning metrics over multiple seeds.
-3. Fill `docs/EXPERIMENT_TRACKER.csv` with final results.
-4. Polish `docs/COURSE_REPORT_DRAFT.md` into the final submission.
+1. Do not continue `seed1 CLS + deterministic` shard-A reruns.
+2. Move on to the remaining larger-sample seed-1 runs if needed.
+3. Complete the larger-sample seed-2 runs if time allows.
+4. Fill `docs/EXPERIMENT_TRACKER.csv` with the completed reevaluation results.
+5. Polish `docs/COURSE_REPORT_DRAFT.md` into the final submission.

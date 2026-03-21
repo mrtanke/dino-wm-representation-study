@@ -297,10 +297,10 @@ Completed:
 - `seed0 patch + gaussian`
 - `seed0 CLS + gaussian`
 - `seed1 patch + deterministic`
+- `seed1 CLS + deterministic`, shard B only
 
 Pending:
 
-- `seed1 CLS + deterministic`
 - `seed1 patch + gaussian`
 - `seed1 CLS + gaussian`
 - all four `seed2` settings
@@ -308,6 +308,12 @@ Pending:
 Status:
 
 - in progress
+
+Important decision:
+
+- `seed1 CLS + deterministic` was attempted twice on shard A and completed once on shard B
+- because shard A repeatedly failed to finish cleanly, this group is now treated as dropped for the larger-sample follow-up
+- do not spend more time on shard-A reruns for this setting
 
 ### Stage 4. Final Analysis and Write-Up
 
@@ -396,7 +402,7 @@ The project becomes ambitious if it additionally includes:
 
 ### Immediate
 
-- complete larger-sample reevaluation for the remaining `seed1` settings
+- complete larger-sample reevaluation for the remaining `seed1` settings that are still active
 - complete larger-sample reevaluation for all `seed2` settings
 - aggregate larger-sample metrics into report-ready tables
 
@@ -413,7 +419,7 @@ The project becomes ambitious if it additionally includes:
 
 For the current plan, not the long-horizon vision:
 
-- remaining `seed1` larger-sample follow-up:
+- remaining `seed1` larger-sample follow-up after dropping `seed1 CLS + deterministic` shard-A reruns:
   about `0.5` to `1.0` hour
 - full `seed2` larger-sample follow-up:
   about `1.0` to `1.5` hours
@@ -422,7 +428,7 @@ For the current plan, not the long-horizon vision:
 
 Estimated total remaining time for the current deliverable:
 
-- about `2` to `3.5` hours
+- about `2.0` to `3.5` hours
 
 For the extended vision:
 
