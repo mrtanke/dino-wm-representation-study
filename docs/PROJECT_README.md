@@ -180,8 +180,10 @@ Progress summary:
 - representation expansion beyond DINOv2 patch/CLS has not been implemented
 - exploratory pretrained planning sanity has now started on `Wall` and `PushT`
 - `Wall` completed successfully under the local WSL setup
+- `Wall` also completed successfully under a stronger planning budget
 - the reduced-budget `PushT` sanity stalled with poor results
 - a stronger-budget `PushT` retry improved planning distance substantially, but still stalled before `final_eval`
+- an official-like `PushT` retry completed successfully
 
 Estimated remaining time:
 
@@ -190,6 +192,19 @@ Estimated remaining time:
 Estimated time to finish the current closeout plan:
 
 - about `0.5` to `1.0` hour total for final cleanup and final aggregation
+
+## Final Closeout Summary
+
+The cleanest current reading of the project is:
+
+- main controlled evidence comes from the PointMaze `3-seed x 4-setting` matrix
+- `DINOv2 patch + deterministic` is the strongest completed baseline
+- `DINOv2 CLS + deterministic` stays close to patch on PointMaze
+- Gaussian training objectives improve, but planning does not improve consistently
+- the patch-side larger-sample reevaluation is complete enough for a stable closeout story
+- the CLS-side larger-sample reevaluation should be treated as partial evidence
+- `Wall` pretrained sanity passed cleanly
+- `PushT` pretrained sanity improved under a stronger budget, but still did not reach a completed successful evaluation
 
 ## Current Sanity Results
 
@@ -318,10 +333,14 @@ To check whether the local setup generalizes beyond PointMaze, pretrained planni
   `$HOME/dino_wm_data/wall_single`
 - checkpoint:
   `$HOME/dino_wm_ckpts/outputs/wall_single`
-- output:
+- base output:
   `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260322164743_wall_single_gH5`
-- result:
+- stronger-budget output:
+  `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260322205947_wall_single_gH5`
+- base result:
   `success_rate = 1.0`, `mean_state_dist = 1.7964`, `mean_visual_dist = 0.5799`
+- stronger-budget result:
+  `success_rate = 1.0`, `mean_state_dist = 4.1456`, `mean_visual_dist = 1.1377`
 
 ### PushT
 
@@ -335,10 +354,14 @@ To check whether the local setup generalizes beyond PointMaze, pretrained planni
   `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260322165419_pusht_gH5`
 - stronger-budget retry output:
   `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260322190605_pusht_gH5`
+- official-like retry output:
+  `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260322210051_pusht_gH5`
 - reduced-budget status:
   stalled at `step 74` with `mpc/success_rate = 0.0` and very high `mean_state_dist`
 - stronger-budget retry status:
   improved to roughly the `60-70` `mean_state_dist` range by `step 52`, but still stalled before `final_eval`
+- official-like retry result:
+  `success_rate = 1.0`, `mean_state_dist = 20.7644`, `mean_visual_dist = 2.7361`
 
 ## Recommended Final Steps
 

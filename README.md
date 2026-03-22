@@ -81,8 +81,10 @@ Still pending:
 Exploratory cross-environment sanity checks:
 
 - `Wall` pretrained planning sanity completed successfully
+- `Wall` stronger-budget retry also completed successfully
 - `PushT` pretrained planning sanity under a reduced budget stalled with poor results
 - a stronger-budget `PushT` retry improved state distance substantially, but still stalled before `final_eval`
+- an official-like `PushT` retry completed successfully
 
 ### Not Implemented Yet
 
@@ -161,14 +163,18 @@ To test whether the current local setup generalizes beyond PointMaze, pretrained
 
 - `Wall`
   - config: `conf/plan_wall_wsl.yaml`
-  - output: `plan_outputs/20260322164743_wall_single_gH5`
-  - result: `success_rate = 1.0`, `mean_state_dist = 1.7964`, `mean_visual_dist = 0.5799`
+  - base output: `plan_outputs/20260322164743_wall_single_gH5`
+  - stronger-budget output: `plan_outputs/20260322205947_wall_single_gH5`
+  - base result: `success_rate = 1.0`, `mean_state_dist = 1.7964`, `mean_visual_dist = 0.5799`
+  - stronger-budget result: `success_rate = 1.0`, `mean_state_dist = 4.1456`, `mean_visual_dist = 1.1377`
 - `PushT`
   - config: `conf/plan_pusht_wsl.yaml`
   - reduced-budget output: `plan_outputs/20260322165419_pusht_gH5`
   - stronger-budget retry output: `plan_outputs/20260322190605_pusht_gH5`
+  - official-like retry output: `plan_outputs/20260322210051_pusht_gH5`
   - reduced-budget status: stalled with `mpc/success_rate = 0.0` through step `74`
   - stronger-budget retry status: improved `mean_state_dist` into the `60-70` range by step `52`, but still stalled before `final_eval`
+  - official-like retry result: `success_rate = 1.0`, `mean_state_dist = 20.7644`, `mean_visual_dist = 2.7361`
 
 ## Estimated Remaining Time
 
@@ -181,6 +187,19 @@ Estimated total remaining time:
 - about `0.5` to `1.0` hour if the project closes after the patch-focused reevaluation
 
 This estimate assumes no new model integrations and no major WSL/CUDA instability.
+
+## Final Readout
+
+The most defensible current interpretation is:
+
+- the main evidence comes from the PointMaze `3-seed x 4-setting` matrix
+- `DINOv2 patch + deterministic` is the strongest completed baseline
+- `DINOv2 CLS + deterministic` is more competitive than expected on PointMaze
+- Gaussian improves training losses more clearly than planning quality
+- the patch-side larger-sample reevaluation is complete enough for closeout
+- the CLS-side larger-sample reevaluation is partial rather than symmetric
+- `Wall` pretrained sanity passed cleanly
+- `PushT` improved under a stronger budget, but still ended as an unfinished stalled retry
 
 ## Collaboration Notes
 

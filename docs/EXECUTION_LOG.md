@@ -980,6 +980,39 @@ Interpretation:
 - the local WSL setup works on at least one environment beyond PointMaze
 - the pretrained `Wall` checkpoint can be loaded and planned end to end without further code changes
 
+### Wall pretrained sanity, stronger-budget retry
+
+Command:
+
+```bash
+python plan.py --config-name plan_wall_wsl.yaml \
+  ckpt_base_path=$HOME/dino_wm_ckpts \
+  model_name=wall_single \
+  n_evals=1 \
+  n_plot_samples=0 \
+  plot_rollouts=False \
+  save_video=False \
+  planner.sub_planner.num_samples=64 \
+  planner.sub_planner.topk=8 \
+  planner.sub_planner.opt_steps=5 \
+  planner.n_taken_actions=5
+```
+
+Result:
+
+- `final_eval/success_rate = 1.0`
+- `final_eval/mean_state_dist = 4.1456`
+- `final_eval/mean_visual_dist = 1.1377`
+
+Output:
+
+- `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260322205947_wall_single_gH5`
+
+Interpretation:
+
+- `Wall` remains stable under a stronger local planning budget
+- the stronger budget did not improve the final distance relative to the lighter sanity run, so this should be read mainly as a stability confirmation rather than a new best result
+
 ### PushT pretrained sanity
 
 Command:
@@ -1046,3 +1079,36 @@ Interpretation:
 - this retry was better than the reduced-budget PushT sanity
 - `mean_state_dist` moved from the earlier `100-130` range into roughly the `60-70` range for much of the run
 - however, it still failed to reach `final_eval` and was later treated as `improved but stalled`
+
+### PushT pretrained sanity, official-like retry
+
+Command:
+
+```bash
+python plan.py --config-name plan_pusht_wsl.yaml \
+  ckpt_base_path=$HOME/dino_wm_ckpts \
+  model_name=pusht \
+  n_evals=1 \
+  n_plot_samples=0 \
+  plot_rollouts=False \
+  save_video=False \
+  planner.sub_planner.num_samples=300 \
+  planner.sub_planner.topk=30 \
+  planner.sub_planner.opt_steps=30 \
+  planner.n_taken_actions=5
+```
+
+Result:
+
+- `final_eval/success_rate = 1.0`
+- `final_eval/mean_state_dist = 20.7644`
+- `final_eval/mean_visual_dist = 2.7361`
+
+Output:
+
+- `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260322210051_pusht_gH5`
+
+Interpretation:
+
+- increasing the planning budget to something much closer to the official PushT configuration was enough to produce a clean completed successful run
+- this suggests the earlier PushT failures were caused more by aggressive budget reduction than by a fundamentally broken local setup

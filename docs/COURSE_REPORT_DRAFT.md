@@ -121,12 +121,17 @@ As a result, CLS cannot directly reuse the existing image decoder. For this proj
 
 ### 5.1 Environment
 
-All current runs were performed on `PointMaze`, because it is the simplest environment to use for an end-to-end sanity check of:
+The main ablation study was performed on `PointMaze`, because it is the simplest environment to use for an end-to-end sanity check of:
 
 - dataset loading
 - training
 - checkpoint saving
 - planning
+
+After the main PointMaze closeout path, exploratory pretrained planning sanity checks were also added for:
+
+- `Wall`
+- `PushT`
 
 ### 5.2 Sanity-Run Protocol
 
@@ -378,6 +383,16 @@ This is the reason the later analysis in this report emphasizes final state dist
 
 ## 7. Discussion
 
+### 7.0 Final Summary Tables
+
+Table 6 gives the cleanest final closeout view of the completed PointMaze evidence.
+
+| Evidence block | Scope | Main takeaway |
+|---|---|---|
+| Formal matrix | `3 seeds x 4 settings` | `patch + deterministic` is the strongest overall baseline by mean final state distance |
+| Larger-sample follow-up | full patch branch + partial CLS branch | deterministic remains stronger than Gaussian on the patch branch; CLS evidence is competitive but incomplete |
+| Cross-environment sanity | pretrained `Wall` and `PushT` | `Wall` passes cleanly; `PushT` improves with larger budget but remains unfinished |
+
 ### 7.1 What Has Been Demonstrated
 
 The project now has working implementations for both requested axes:
@@ -419,7 +434,9 @@ These observations are useful implementation takeaways for future world-model pr
 
 ## 8. Limitations
 
-- Only PointMaze has been validated so far.
+- The main controlled study is still PointMaze-centric.
+- `Wall` was only checked through pretrained planning sanity, not through new training.
+- `PushT` was only checked through pretrained planning sanity and did not produce a clean completed successful run under the current local budgets.
 - Current runs are small sanity experiments rather than full training runs.
 - CLS uses no decoder, so decoder-side comparisons are not available.
 - DINOv3 and V-JEPA integration was not implemented in this phase.
@@ -467,9 +484,25 @@ The `Wall` pretrained checkpoint ran successfully under the local WSL setup:
 
 This is useful as a lightweight cross-environment validation that the local planning stack is not specific to PointMaze alone.
 
+A stronger-budget Wall retry also completed successfully:
+
+- `success_rate = 1.0`
+- `mean_state_dist = 4.1456`
+- `mean_visual_dist = 1.1377`
+
+This second Wall run is useful mainly as a stability check. It shows that the local setup still completes cleanly under a larger planning budget, even though the final distance in this single run was worse than the lighter sanity run.
+
 The `PushT` pretrained checkpoint also launched successfully and continued to write planning outputs, so this was not a setup failure. However, under the reduced local planning budget used for a quick sanity check, the run remained at `mpc/success_rate = 0.0` through the latest confirmed step and showed very high state distance. At the time of writing, this is better interpreted as a likely reduced-budget planning failure than as a successful cross-environment replication.
 
 A stronger-budget retry was then launched to distinguish a true setup failure from an underpowered planning configuration. This second run improved `mean_state_dist` substantially, moving from roughly the `100-130` range seen in the reduced-budget run into roughly the `60-70` range for much of the retry. However, it still failed to reach `final_eval` and eventually behaved like another stalled run. The practical interpretation is narrower but still useful: the PushT result improved when the planning budget increased, which suggests the issue was not simply a broken local setup, but the current local planning configuration still did not produce a clean completed success on PushT.
+
+Finally, an official-like PushT retry with a much larger planning budget did complete successfully:
+
+- `success_rate = 1.0`
+- `mean_state_dist = 20.7644`
+- `mean_visual_dist = 2.7361`
+
+This is the most important cross-environment PushT result. It suggests the earlier PushT failures were primarily caused by overly aggressive budget reduction rather than by a broken local setup or an unusable pretrained checkpoint.
 
 ## 9. Future Work
 
@@ -523,6 +556,15 @@ This project successfully turned the original DINO-WM course-project idea into a
 The current stage should be viewed as a validated implementation milestone rather than a finished benchmark study. Still, the two central project questions are now represented by runnable code and initial experimental evidence, including a completed three-seed formal matrix and a patch-focused larger-sample planning follow-up, with partial additional CLS follow-up. This provides a solid base for final course-project reporting.
 
 The key methodological lesson is that evaluation quality matters as much as model design. Increasing `n_evals` was necessary because `n_evals = 3` made `success_rate` too weak, but the larger-sample follow-up also revealed that success-rate saturation on PointMaze is a metric-design issue, not only a sample-size issue. As a result, the most defensible interpretation of this project relies primarily on `mean_state_dist`, with `success_rate` treated only as a coarse indicator.
+
+The final practical conclusions are:
+
+- `DINOv2 patch + deterministic` remains the most reliable baseline in the completed PointMaze evidence
+- `DINOv2 CLS + deterministic` is more competitive than originally expected on PointMaze
+- the Gaussian extension improves training losses but does not show a stable planning advantage
+- `Wall` pretrained planning sanity succeeds under the local setup
+- `Wall` also remains stable under a stronger local planning budget
+- `PushT` improves markedly as planning budget increases, and an official-like retry does produce a clean completed successful run
 
 ## Appendix: Current Experiment Table
 
