@@ -469,6 +469,8 @@ This is useful as a lightweight cross-environment validation that the local plan
 
 The `PushT` pretrained checkpoint also launched successfully and continued to write planning outputs, so this was not a setup failure. However, under the reduced local planning budget used for a quick sanity check, the run remained at `mpc/success_rate = 0.0` through the latest confirmed step and showed very high state distance. At the time of writing, this is better interpreted as a likely reduced-budget planning failure than as a successful cross-environment replication.
 
+A stronger-budget retry was then launched to distinguish a true setup failure from an underpowered planning configuration. This second run improved `mean_state_dist` substantially, moving from roughly the `100-130` range seen in the reduced-budget run into roughly the `60-70` range for much of the retry. However, it still failed to reach `final_eval` and eventually behaved like another stalled run. The practical interpretation is narrower but still useful: the PushT result improved when the planning budget increased, which suggests the issue was not simply a broken local setup, but the current local planning configuration still did not produce a clean completed success on PushT.
+
 ## 9. Future Work
 
 The next steps are clear:

@@ -180,7 +180,8 @@ Progress summary:
 - representation expansion beyond DINOv2 patch/CLS has not been implemented
 - exploratory pretrained planning sanity has now started on `Wall` and `PushT`
 - `Wall` completed successfully under the local WSL setup
-- `PushT` is still running under a reduced local planning budget and currently looks more like a failure case than a success case
+- the reduced-budget `PushT` sanity stalled with poor results
+- a stronger-budget `PushT` retry improved planning distance substantially, but still stalled before `final_eval`
 
 Estimated remaining time:
 
@@ -330,12 +331,14 @@ To check whether the local setup generalizes beyond PointMaze, pretrained planni
   `$HOME/dino_wm_data/pusht_noise`
 - checkpoint:
   `$HOME/dino_wm_ckpts/outputs/pusht`
-- output:
+- reduced-budget output:
   `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260322165419_pusht_gH5`
-- current status:
-  still running under a reduced local planning budget
-- current trend:
-  `mpc/success_rate = 0.0` through step `74`, with high `mean_state_dist` and no sign of recovery so far
+- stronger-budget retry output:
+  `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260322190605_pusht_gH5`
+- reduced-budget status:
+  stalled at `step 74` with `mpc/success_rate = 0.0` and very high `mean_state_dist`
+- stronger-budget retry status:
+  improved to roughly the `60-70` `mean_state_dist` range by `step 52`, but still stalled before `final_eval`
 
 ## Recommended Final Steps
 

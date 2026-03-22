@@ -81,7 +81,8 @@ Still pending:
 Exploratory cross-environment sanity checks:
 
 - `Wall` pretrained planning sanity completed successfully
-- `PushT` pretrained planning sanity is still running under a reduced local planning budget and currently looks like a likely failure case
+- `PushT` pretrained planning sanity under a reduced budget stalled with poor results
+- a stronger-budget `PushT` retry improved state distance substantially, but still stalled before `final_eval`
 
 ### Not Implemented Yet
 
@@ -164,9 +165,10 @@ To test whether the current local setup generalizes beyond PointMaze, pretrained
   - result: `success_rate = 1.0`, `mean_state_dist = 1.7964`, `mean_visual_dist = 0.5799`
 - `PushT`
   - config: `conf/plan_pusht_wsl.yaml`
-  - output: `plan_outputs/20260322165419_pusht_gH5`
-  - current status: still running under a reduced planning budget
-  - current trend: `mpc/success_rate = 0.0` through step `74`, with high state distance and no sign of recovery
+  - reduced-budget output: `plan_outputs/20260322165419_pusht_gH5`
+  - stronger-budget retry output: `plan_outputs/20260322190605_pusht_gH5`
+  - reduced-budget status: stalled with `mpc/success_rate = 0.0` through step `74`
+  - stronger-budget retry status: improved `mean_state_dist` into the `60-70` range by step `52`, but still stalled before `final_eval`
 
 ## Estimated Remaining Time
 

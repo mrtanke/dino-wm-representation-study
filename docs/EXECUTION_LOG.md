@@ -996,7 +996,7 @@ python plan.py --config-name plan_pusht_wsl.yaml \
   planner.n_taken_actions=1
 ```
 
-Current status:
+Reduced-budget status:
 
 - output:
   `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260322165419_pusht_gH5`
@@ -1011,3 +1011,38 @@ Interpretation:
 
 - this run is not a launch failure; the planner is producing outputs and writing logs
 - under the current reduced local planning budget, `PushT` currently looks like a likely failure case rather than a likely success case
+
+### PushT pretrained sanity, stronger-budget retry
+
+Command:
+
+```bash
+python plan.py --config-name plan_pusht_wsl.yaml \
+  ckpt_base_path=$HOME/dino_wm_ckpts \
+  model_name=pusht \
+  n_evals=1 \
+  n_plot_samples=0 \
+  plot_rollouts=False \
+  save_video=False \
+  planner.sub_planner.num_samples=64 \
+  planner.sub_planner.topk=8 \
+  planner.sub_planner.opt_steps=5 \
+  planner.n_taken_actions=5
+```
+
+Current status:
+
+- output:
+  `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260322190605_pusht_gH5`
+- latest confirmed step:
+  `52`
+- latest confirmed log time:
+  `2026-03-22 19:23:47`
+- current intermediate trend:
+  `mpc/success_rate = 0.0`, but `mean_state_dist` improved substantially versus the reduced-budget run
+
+Interpretation:
+
+- this retry was better than the reduced-budget PushT sanity
+- `mean_state_dist` moved from the earlier `100-130` range into roughly the `60-70` range for much of the run
+- however, it still failed to reach `final_eval` and was later treated as `improved but stalled`
