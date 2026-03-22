@@ -178,6 +178,9 @@ Progress summary:
 - both optional `seed2 CLS` larger-sample branches stalled before `final_eval`
 - report cleanup no longer depends on any further CLS reevaluation
 - representation expansion beyond DINOv2 patch/CLS has not been implemented
+- exploratory pretrained planning sanity has now started on `Wall` and `PushT`
+- `Wall` completed successfully under the local WSL setup
+- `PushT` is still running under a reduced local planning budget and currently looks more like a failure case than a success case
 
 Estimated remaining time:
 
@@ -301,6 +304,38 @@ Practical interpretation:
 - on seed 1, both Gaussian variants are in the same broad range as deterministic patch, but neither overturns the broader formal-matrix conclusion
 - on seed 2, deterministic patch again looks better than patch Gaussian under the larger-sample follow-up
 - `mean_state_dist` remains more informative than `success_rate`
+
+## Cross-Environment Pretrained Sanity
+
+To check whether the local setup generalizes beyond PointMaze, pretrained planning sanity checks were also started on `Wall` and `PushT`.
+
+### Wall
+
+- config:
+  `conf/plan_wall_wsl.yaml`
+- dataset:
+  `$HOME/dino_wm_data/wall_single`
+- checkpoint:
+  `$HOME/dino_wm_ckpts/outputs/wall_single`
+- output:
+  `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260322164743_wall_single_gH5`
+- result:
+  `success_rate = 1.0`, `mean_state_dist = 1.7964`, `mean_visual_dist = 0.5799`
+
+### PushT
+
+- config:
+  `conf/plan_pusht_wsl.yaml`
+- dataset:
+  `$HOME/dino_wm_data/pusht_noise`
+- checkpoint:
+  `$HOME/dino_wm_ckpts/outputs/pusht`
+- output:
+  `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260322165419_pusht_gH5`
+- current status:
+  still running under a reduced local planning budget
+- current trend:
+  `mpc/success_rate = 0.0` through step `74`, with high `mean_state_dist` and no sign of recovery so far
 
 ## Recommended Final Steps
 

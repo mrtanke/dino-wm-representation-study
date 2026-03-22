@@ -455,6 +455,20 @@ This estimate assumes:
 
 The current working mode is therefore closeout-first: the project no longer depends on broad additional reevaluation before the report can be finalized. The attempted seed-2 CLS deterministic and seed-2 CLS Gaussian larger-sample runs are now treated as `stalled / optional unfinished`, not as active blockers.
 
+## 8.2 Exploratory Cross-Environment Checks
+
+After the main PointMaze closeout path was largely complete, exploratory pretrained planning sanity checks were started on `Wall` and `PushT`.
+
+The `Wall` pretrained checkpoint ran successfully under the local WSL setup:
+
+- `success_rate = 1.0`
+- `mean_state_dist = 1.7964`
+- `mean_visual_dist = 0.5799`
+
+This is useful as a lightweight cross-environment validation that the local planning stack is not specific to PointMaze alone.
+
+The `PushT` pretrained checkpoint also launched successfully and continued to write planning outputs, so this was not a setup failure. However, under the reduced local planning budget used for a quick sanity check, the run remained at `mpc/success_rate = 0.0` through the latest confirmed step and showed very high state distance. At the time of writing, this is better interpreted as a likely reduced-budget planning failure than as a successful cross-environment replication.
+
 ## 9. Future Work
 
 The next steps are clear:

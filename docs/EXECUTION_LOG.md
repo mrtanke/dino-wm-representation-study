@@ -934,3 +934,80 @@ Decision:
 - mark seed-2 Gaussian CLS as `stalled / optional unfinished`
 - stop further CLS-side large-eval retries in the main closeout path
 - move the project fully into final aggregation and report cleanup
+
+## Cross-Environment Pretrained Sanity
+
+After the PointMaze closeout path was mostly complete, pretrained planning sanity checks were started on `Wall` and `PushT` to test whether the local WSL setup also worked outside PointMaze.
+
+Additional local configs added:
+
+- `conf/plan_wall_wsl.yaml`
+- `conf/plan_pusht_wsl.yaml`
+
+Additional datasets downloaded from the official OSF release and extracted in WSL:
+
+- `/home/zack/dino_wm_data/wall_single`
+- `/home/zack/dino_wm_data/pusht_noise`
+
+### Wall pretrained sanity
+
+Command:
+
+```bash
+python plan.py --config-name plan_wall_wsl.yaml \
+  ckpt_base_path=$HOME/dino_wm_ckpts \
+  model_name=wall_single \
+  n_evals=1 \
+  n_plot_samples=1 \
+  planner.sub_planner.num_samples=8 \
+  planner.sub_planner.topk=2 \
+  planner.sub_planner.opt_steps=1 \
+  planner.n_taken_actions=1
+```
+
+Result:
+
+- `final_eval/success_rate = 1.0`
+- `final_eval/mean_state_dist = 1.7964`
+- `final_eval/mean_visual_dist = 0.5799`
+
+Output:
+
+- `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260322164743_wall_single_gH5`
+
+Interpretation:
+
+- the local WSL setup works on at least one environment beyond PointMaze
+- the pretrained `Wall` checkpoint can be loaded and planned end to end without further code changes
+
+### PushT pretrained sanity
+
+Command:
+
+```bash
+python plan.py --config-name plan_pusht_wsl.yaml \
+  ckpt_base_path=$HOME/dino_wm_ckpts \
+  model_name=pusht \
+  n_evals=1 \
+  n_plot_samples=1 \
+  planner.sub_planner.num_samples=8 \
+  planner.sub_planner.topk=2 \
+  planner.sub_planner.opt_steps=1 \
+  planner.n_taken_actions=1
+```
+
+Current status:
+
+- output:
+  `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260322165419_pusht_gH5`
+- latest confirmed step:
+  `74`
+- latest confirmed log time:
+  `2026-03-22 17:50:46`
+- current intermediate trend:
+  `mpc/success_rate = 0.0`, with very high `mean_state_dist`
+
+Interpretation:
+
+- this run is not a launch failure; the planner is producing outputs and writing logs
+- under the current reduced local planning budget, `PushT` currently looks like a likely failure case rather than a likely success case

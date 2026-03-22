@@ -78,6 +78,11 @@ Still pending:
 - `seed2 CLS + deterministic` (optional unfinished)
 - `seed2 CLS + gaussian` (optional unfinished)
 
+Exploratory cross-environment sanity checks:
+
+- `Wall` pretrained planning sanity completed successfully
+- `PushT` pretrained planning sanity is still running under a reduced local planning budget and currently looks like a likely failure case
+
 ### Not Implemented Yet
 
 These were part of the broader proposal, but are not part of the current implemented scope:
@@ -148,6 +153,20 @@ Current interpretation:
 - the stochastic extension still does not clearly beat the deterministic baseline in planning
 - on the patch side, the larger-sample follow-up now consistently favors deterministic over Gaussian on seeds 0 and 2
 - the remaining seed-2 CLS branch should be treated as partial evidence, not missing required work
+
+### Cross-Environment Sanity Checks
+
+To test whether the current local setup generalizes beyond PointMaze, pretrained planning sanity checks were also started for `Wall` and `PushT`.
+
+- `Wall`
+  - config: `conf/plan_wall_wsl.yaml`
+  - output: `plan_outputs/20260322164743_wall_single_gH5`
+  - result: `success_rate = 1.0`, `mean_state_dist = 1.7964`, `mean_visual_dist = 0.5799`
+- `PushT`
+  - config: `conf/plan_pusht_wsl.yaml`
+  - output: `plan_outputs/20260322165419_pusht_gH5`
+  - current status: still running under a reduced planning budget
+  - current trend: `mpc/success_rate = 0.0` through step `74`, with high state distance and no sign of recovery
 
 ## Estimated Remaining Time
 
