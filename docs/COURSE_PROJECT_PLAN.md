@@ -305,7 +305,6 @@ Completed:
 
 Pending:
 
-- `seed2 CLS + deterministic`
 - `seed2 CLS + gaussian`
 
 Status:
@@ -317,6 +316,10 @@ Important decision:
 - `seed1 CLS + deterministic` was attempted twice on shard A and completed once on shard B
 - because shard A repeatedly failed to finish cleanly, this group is now treated as dropped for the larger-sample follow-up
 - do not spend more time on shard-A reruns for this setting
+- `seed2 CLS + deterministic` shard A was also stopped after stalling without `final_eval`
+- this seed-2 CLS branch is now optional unfinished work, not a blocker for closeout
+- `seed2 CLS + gaussian` shard A was attempted twice and also failed to reach `final_eval`
+- do not continue the remaining seed-2 CLS branch in the main closeout path
 
 ### Stage 4. Final Analysis and Write-Up
 
@@ -405,8 +408,6 @@ The project becomes ambitious if it additionally includes:
 
 ### Immediate
 
-- complete larger-sample reevaluation for the remaining `seed1` settings that are still active
-- complete larger-sample reevaluation for all `seed2` settings
 - aggregate larger-sample metrics into report-ready tables
 
 ### Near-term
@@ -422,14 +423,13 @@ The project becomes ambitious if it additionally includes:
 
 For the current plan, not the long-horizon vision:
 
-- optional seed-2 CLS follow-up:
-  about `1.0` to `2.0` hours
+- optional seed-2 Gaussian CLS follow-up:
+  about `0.5` to `1.0` hour
 - aggregation and document cleanup:
   about `0.5` to `1.0` hour
 
 Estimated total remaining time for the current deliverable:
 
-- about `1.5` to `3.0` hours if seed-2 CLS follow-up is still pursued
 - about `0.5` to `1.0` hour if the project closes after patch-focused reevaluation
 
 For the extended vision:
@@ -445,7 +445,8 @@ For the extended vision:
 3. Present `DINOv3`, `V-JEPA`, `DINO-Tok`, and `VFM-VAE` as future extensions unless they are actually implemented and run.
 4. Use `mean_state_dist` as the primary planning comparison metric.
 5. Keep the final write-up conservative about what the data currently supports.
-6. Next active target: choose between optional `seed2 CLS` follow-up and final report cleanup.
+6. Current operating mode: closeout-first.
+7. Do not let optional CLS follow-up block report completion.
 
 ## 12. Collaboration Paths
 
@@ -455,10 +456,9 @@ The project is now at a stage where several different technical directions are a
 
 Examples:
 
-- monitor and finish the remaining optional `seed2 CLS` larger-sample follow-up if it remains stable
-- test whether a slightly different evaluation setting makes the comparison sharper
-- verify whether the report should stop at the current patch-focused reevaluation or still include more CLS follow-up
 - summarize planning outcomes with `mean_state_dist` as the main metric
+- clearly label the seed-2 CLS branch as optional unfinished work
+- turn the completed reevaluation results into final tables and concise report language
 
 ### Path B: Expanded Encoder Route
 

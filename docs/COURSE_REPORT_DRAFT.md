@@ -5,6 +5,10 @@
 Representation and Uncertainty in Action-Conditioned World Models:
 A DINO-WM Study on PointMaze
 
+## Abstract
+
+This project studies two controlled modifications to DINO-WM on PointMaze: replacing DINOv2 patch tokens with DINOv2 CLS tokens, and extending the deterministic latent dynamics model with a lightweight Gaussian predictor. We reproduced the pretrained PointMaze planning baseline, implemented the Gaussian transition head, and completed a formal `patch/CLS x deterministic/Gaussian` matrix across three seeds. We then added a larger-sample planning follow-up to reduce the weakness of `n_evals = 3`, using direct `n_evals = 10` or two `n_evals = 5` shards when WSL stability required it. The current evidence shows that `DINOv2 patch + deterministic` remains the strongest overall baseline, `DINOv2 CLS + deterministic` is surprisingly competitive on PointMaze, and the Gaussian extension improves likelihood-style training losses without showing a consistent planning benefit. Because `success_rate` remains saturated even after larger-sample follow-up, the most defensible interpretation of the experiments relies primarily on `mean_state_dist`.
+
 ## 1. Introduction
 
 World models aim to predict future states conditioned on actions and use those predictions for planning. DINO-WM is a strong recent baseline because it combines a frozen visual encoder, a latent transition model, and test-time planning. Its main claim is that strong pre-trained visual features can substantially improve downstream planning.
@@ -313,6 +317,42 @@ This reinforces the earlier three-seed message: under the current PointMaze setu
 
 This is a more defensible result for the course report because it is based on repeated runs rather than a single seed.
 
+After the initial seed-0 slice, the larger-sample follow-up was extended further on the patch branch:
+
+- seed-1 patch deterministic:
+  `mean_state_dist ~= 4.1189`
+- seed-1 patch Gaussian:
+  `mean_state_dist ~= 3.9366`
+- seed-2 patch deterministic:
+  `mean_state_dist ~= 3.4584`
+- seed-2 patch Gaussian:
+  `mean_state_dist ~= 4.3641`
+
+Taken together, these patch-side follow-ups strengthen the same overall interpretation as the formal matrix:
+
+- deterministic patch remains the most reliable patch-side baseline
+- Gaussian patch does not show a consistent planning benefit
+- larger-sample reevaluation helps stabilize the planning story even though it does not fully fix metric saturation
+
+The CLS-side larger-sample follow-up was more uneven. Seed-0 CLS deterministic and seed-0 CLS Gaussian both completed. Seed-1 CLS deterministic never completed as a full two-shard result, seed-2 CLS deterministic stalled before writing `final_eval`, and seed-2 CLS Gaussian also stalled twice without reaching `final_eval`. For that reason, the final report should treat the CLS larger-sample evidence as partial rather than fully symmetric with the patch branch.
+
+Table 5 gives the cleanest closeout view of the larger-sample follow-up at the group level.
+
+| Group | Coverage | Aggregate picture |
+|---|---|---|
+| Seed-0 patch deterministic | complete | `mean_state_dist = 3.1738` |
+| Seed-0 CLS deterministic | complete | two-shard average `~ 3.5291` |
+| Seed-0 patch Gaussian | complete | two-shard average `~ 4.3382` |
+| Seed-0 CLS Gaussian | complete | two-shard average `~ 3.8242` |
+| Seed-1 patch deterministic | complete | two-shard average `~ 4.1189` |
+| Seed-1 CLS deterministic | partial | shard B only, `3.9672`; shard A dropped |
+| Seed-1 patch Gaussian | complete | two-shard average `~ 3.9366` |
+| Seed-1 CLS Gaussian | complete | two-shard average `~ 3.9565` |
+| Seed-2 patch deterministic | complete | two-shard average `~ 3.4584` |
+| Seed-2 CLS deterministic | stalled | optional unfinished |
+| Seed-2 patch Gaussian | complete | two-shard average `~ 4.3641` |
+| Seed-2 CLS Gaussian | stalled | optional unfinished |
+
 ### 6.10 Metric Saturation: Why Increasing `n_evals` Helped but Did Not Fully Solve the Problem
 
 At first, the natural explanation for repeated `success_rate = 1.0` results was simply that `n_evals = 3` was too small. That diagnosis was correct, but only partially complete.
@@ -383,7 +423,7 @@ These observations are useful implementation takeaways for future world-model pr
 - Current runs are small sanity experiments rather than full training runs.
 - CLS uses no decoder, so decoder-side comparisons are not available.
 - DINOv3 and V-JEPA integration was not implemented in this phase.
-- The larger-sample planning reevaluation is still incomplete; it now covers all four seed-0 configurations and seed-1 deterministic patch, but not yet the full seed-1 to seed-2 matrix.
+- The larger-sample planning reevaluation is intentionally incomplete; it now covers the full patch branch plus partial CLS follow-up, while the remaining seed-2 CLS branches were left as stalled optional work.
 - Even after larger-sample follow-up, `success_rate` remains partially saturated on PointMaze, so the metric is weaker than `mean_state_dist`.
 
 ## 8.1 Current Progress
@@ -398,7 +438,7 @@ Completed:
 
 In progress:
 
-- larger-sample planning reevaluation intended to reduce the saturation problem of `success_rate`
+- final aggregation and report cleanup
 
 Not yet implemented:
 
@@ -406,24 +446,24 @@ Not yet implemented:
 
 Estimated remaining time from the current project state:
 
-- about `0.5` to `1.0` hour if the project stops after the patch-focused larger-sample reevaluation and moves directly to final cleanup
-- about `1.5` to `3.0` hours if the optional seed-2 CLS larger-sample follow-up is also completed
+- about `0.5` to `1.0` hour for final aggregation and report cleanup only
 
 This estimate assumes:
 
-- about `1.0` to `2.0` hours for the remaining optional seed-2 CLS runs
+- no new optional CLS reevaluation runs
 - about `0.5` to `1.0` hour for aggregation and final report cleanup
+
+The current working mode is therefore closeout-first: the project no longer depends on broad additional reevaluation before the report can be finalized. The attempted seed-2 CLS deterministic and seed-2 CLS Gaussian larger-sample runs are now treated as `stalled / optional unfinished`, not as active blockers.
 
 ## 9. Future Work
 
 The next steps are clear:
 
-1. Decide whether the optional seed-2 CLS larger-sample follow-up is worth the remaining time budget.
-2. Aggregate the completed larger-sample planning metrics before drawing stronger representation conclusions.
-3. If more evaluation effort is available, increase `n_evals` further or evaluate on a harder environment such as PushT or Wall.
-4. Add a third representation, preferably DINOv3 or V-JEPA.
-5. Study uncertainty more directly by plotting predicted variance over rollout horizon.
-6. If needed, design a CLS-compatible decoder for visualization.
+1. Aggregate the completed larger-sample planning metrics before drawing stronger representation conclusions.
+2. If more evaluation effort is available, increase `n_evals` further or evaluate on a harder environment such as PushT or Wall.
+3. Add a third representation, preferably DINOv3 or V-JEPA.
+4. Study uncertainty more directly by plotting predicted variance over rollout horizon.
+5. If needed, design a CLS-compatible decoder for visualization.
 
 ### 9.1 Is It Worth Increasing `n_evals` Further?
 
@@ -444,7 +484,7 @@ The current evidence suggests that simply raising `n_evals` is unlikely to fully
 Given the current state of the project, the best cost-benefit choice is:
 
 - do not launch a broad new `n_evals` expansion for every model
-- finish the most relevant remaining larger-sample comparisons if they complete cleanly
+- treat incomplete optional CLS larger-sample runs as partial evidence rather than blocking issues
 - then finalize the report using `mean_state_dist` as the main metric
 
 ## 10. Reproducibility
@@ -464,7 +504,7 @@ The repository now includes a compact reproducibility path for the implemented e
 
 This project successfully turned the original DINO-WM course-project idea into a working prototype. We reproduced the pretrained PointMaze planning baseline, ran deterministic DINOv2 patch and CLS training sanity checks, implemented a Gaussian latent transition model, and verified that the stochastic checkpoint can also be used for planning.
 
-The current stage should be viewed as a validated implementation milestone rather than a finished benchmark study. Still, the two central project questions are now represented by runnable code and initial experimental evidence, including a completed three-seed formal matrix and a partially completed larger-sample planning follow-up. This provides a solid base for final course-project reporting.
+The current stage should be viewed as a validated implementation milestone rather than a finished benchmark study. Still, the two central project questions are now represented by runnable code and initial experimental evidence, including a completed three-seed formal matrix and a patch-focused larger-sample planning follow-up, with partial additional CLS follow-up. This provides a solid base for final course-project reporting.
 
 The key methodological lesson is that evaluation quality matters as much as model design. Increasing `n_evals` was necessary because `n_evals = 3` made `success_rate` too weak, but the larger-sample follow-up also revealed that success-rate saturation on PointMaze is a metric-design issue, not only a sample-size issue. As a result, the most defensible interpretation of this project relies primarily on `mean_state_dist`, with `success_rate` treated only as a coarse indicator.
 

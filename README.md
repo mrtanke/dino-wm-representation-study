@@ -75,8 +75,8 @@ Completed larger-sample follow-up:
 Still pending:
 
 - `seed1 CLS + deterministic`
-- `seed2 CLS + deterministic`
-- `seed2 CLS + gaussian`
+- `seed2 CLS + deterministic` (optional unfinished)
+- `seed2 CLS + gaussian` (optional unfinished)
 
 ### Not Implemented Yet
 
@@ -133,6 +133,13 @@ Completed larger-sample snapshots:
 - `seed2 patch + gaussian`
   - two-shard average `mean_state_dist ~= 4.3641`
 
+Closed as optional unfinished:
+
+- `seed2 CLS + deterministic`
+  - stalled before `final_eval`
+- `seed2 CLS + gaussian`
+  - stalled twice before `final_eval`, including one overnight retry
+
 Current interpretation:
 
 - `mean_state_dist` is more informative than `success_rate`
@@ -140,17 +147,16 @@ Current interpretation:
 - `CLS + gaussian` looks better than `patch + gaussian` on seed 0
 - the stochastic extension still does not clearly beat the deterministic baseline in planning
 - on the patch side, the larger-sample follow-up now consistently favors deterministic over Gaussian on seeds 0 and 2
+- the remaining seed-2 CLS branch should be treated as partial evidence, not missing required work
 
 ## Estimated Remaining Time
 
-If we continue only the current larger-sample reevaluation plan, the estimated remaining time is:
+For the current closeout path, the estimated remaining time is:
 
-- optional `seed2 CLS` larger-sample follow-up: about `1.0` to `2.0` hours
 - metric aggregation and final doc cleanup: about `0.5` to `1.0` hour
 
 Estimated total remaining time:
 
-- about `1.5` to `3.0` hours if the optional `seed2 CLS` path is still pursued
 - about `0.5` to `1.0` hour if the project closes after the patch-focused reevaluation
 
 This estimate assumes no new model integrations and no major WSL/CUDA instability.
@@ -184,9 +190,9 @@ At this point, several technical directions are all reasonable. They can move in
 
 Useful work here:
 
-- finish or monitor the remaining optional `seed2 CLS` larger-sample follow-up
-- verify whether the remaining CLS runs are worth keeping or whether the report should stop at the patch-focused reevaluation
 - summarize the larger-sample outcomes using `mean_state_dist` rather than relying on saturated `success_rate`
+- mark the remaining seed-2 CLS reevaluation attempts as partial optional evidence
+- finish the final tables and report wording cleanup
 - if time allows, test one slightly harder planning setting, such as a stricter evaluation budget or one additional environment like `PushT` or `Wall`
 
 ### Track B: Expanded Representation Path

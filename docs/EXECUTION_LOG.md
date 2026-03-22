@@ -893,3 +893,44 @@ Interpretation:
 - on seed 2, Gaussian patch again underperforms deterministic patch in larger-sample planning
 - this makes the patch-side deterministic-vs-Gaussian comparison more consistent across the larger-sample follow-up
 - at this point the patch-focused reevaluation objective is effectively complete
+
+### Seed-2 deterministic CLS follow-up status
+
+Attempt history:
+
+- shard A, first attempt:
+  `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260321202859_2026-03-18_23-32-43_gH5`
+
+Observed behavior:
+
+- the run progressed past `step 140`
+- it never wrote `final_eval`
+- later checks showed very low process activity and no further log growth
+
+Decision:
+
+- mark this run as `stalled / optional unfinished`
+- stop the WSL session instead of continuing to wait
+- do not let this optional CLS branch block report completion
+
+### Seed-2 Gaussian CLS follow-up status
+
+Attempt history:
+
+- shard A, first attempt:
+  `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260321224434_2026-03-19_00-16-03_gH5`
+- shard A, overnight retry:
+  `/mnt/c/Users/zack/Documents/GNN3/plan_outputs/20260322002701_2026-03-19_00-16-03_gH5`
+
+Observed behavior:
+
+- the first attempt progressed to roughly `step 182` without writing `final_eval`
+- the overnight retry progressed to `step 173`
+- the retry hit a `120` minute timeout
+- the overnight queue stopped immediately after this failure, so shard B, PushT sanity, and Wall sanity were not launched
+
+Decision:
+
+- mark seed-2 Gaussian CLS as `stalled / optional unfinished`
+- stop further CLS-side large-eval retries in the main closeout path
+- move the project fully into final aggregation and report cleanup

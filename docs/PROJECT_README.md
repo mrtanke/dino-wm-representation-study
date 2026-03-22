@@ -168,25 +168,24 @@ Partially completed:
 
 Pending:
 
-- remaining larger-sample seed-2 planning for:
-  - `CLS + deterministic`
-  - `CLS + gaussian`
 - third representation such as DINOv3 or V-JEPA
 
 Progress summary:
 
 - the minimum course-project scope is complete
-- the stricter planning reevaluation is still in progress
+- the patch-focused larger-sample reevaluation is complete
+- the remaining `seed2 CLS` line is now optional unfinished work
+- both optional `seed2 CLS` larger-sample branches stalled before `final_eval`
+- report cleanup no longer depends on any further CLS reevaluation
 - representation expansion beyond DINOv2 patch/CLS has not been implemented
 
 Estimated remaining time:
 
-- `seed2` CLS larger-sample follow-up, if still pursued: about `1.0` to `2.0` hours
 - results aggregation and doc cleanup: about `0.5` to `1.0` hour
 
-Estimated time to finish the current larger-sample reevaluation plan:
+Estimated time to finish the current closeout plan:
 
-- about `1.5` to `3` hours total if the remaining work is limited to optional seed-2 CLS follow-up plus final cleanup
+- about `0.5` to `1.0` hour total for final cleanup and final aggregation
 
 ## Current Sanity Results
 
@@ -289,6 +288,10 @@ Current seed-2 larger-sample picture:
   two-shard average over 10 episodes, `mean_state_dist ~= 3.4584`
 - Gaussian patch:
   two-shard average over 10 episodes, `mean_state_dist ~= 4.3641`
+- deterministic CLS:
+  shard A was started but later stopped without `final_eval`
+- Gaussian CLS:
+  shard A was attempted twice, including one overnight retry, and still failed to reach `final_eval`
 
 Practical interpretation:
 
@@ -302,10 +305,11 @@ Practical interpretation:
 ## Recommended Final Steps
 
 1. Do not continue `seed1 CLS + deterministic` shard-A reruns.
-2. Decide whether the optional `seed2 CLS` larger-sample follow-up is worth the remaining time.
-3. Otherwise move straight to final aggregation and report cleanup.
-4. Fill `docs/EXPERIMENT_TRACKER.csv` with the completed reevaluation results.
-5. Polish `docs/COURSE_REPORT_DRAFT.md` into the final submission.
+2. Treat the full `seed2 CLS` larger-sample branch as `stalled / optional unfinished`.
+3. Do not spend more time on new optional CLS reruns in the main closeout path.
+4. Move straight to final aggregation and report cleanup.
+5. Build one compact final summary table for formal runs and one for larger-sample follow-up.
+6. Polish `docs/COURSE_REPORT_DRAFT.md` into the final submission.
 
 ## Collaboration-Friendly Next Steps
 
@@ -339,9 +343,9 @@ This is a good option if someone wants to keep pushing the empirical side.
 
 Useful tasks:
 
-- monitor the ongoing `seed2 CLS + deterministic` larger-sample run
-- if it ends cleanly, continue the second shard
-- only after that, decide whether `seed2 CLS + gaussian` is still worth the time budget
+- summarize the completed larger-sample results and clearly mark the incomplete CLS rows as partial evidence
+- check that tracker notes, output folders, and report wording all line up
+- keep collaboration docs in sync with the final closeout status
 
 This path is useful, but no longer the only important one. The current project already has a strong patch-focused larger-sample story.
 
