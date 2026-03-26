@@ -193,6 +193,61 @@ Estimated time to finish the current closeout plan:
 
 - about `0.5` to `1.0` hour total for final cleanup and final aggregation
 
+## Encoder-3 and Encoder-4 Plan
+
+The original `DINOv2 patch` and `DINOv2 CLS` lines are already being handled elsewhere. The next local responsibility is therefore focused on the third and fourth encoder slots:
+
+- encoder 3:
+  `DINOv3 patch`
+- encoder 4:
+  `V-JEPA`
+
+Target tasks:
+
+- `point_maze`
+- `wall_single`
+
+Target training scope:
+
+- `10 epochs`
+- start with `deterministic`
+- only add Gaussian after deterministic training and planning both work
+
+Planned deterministic matrix:
+
+- `DINOv3 patch + deterministic + point_maze`
+- `DINOv3 patch + deterministic + wall_single`
+- `V-JEPA + deterministic + point_maze`
+- `V-JEPA + deterministic + wall_single`
+
+Current next step:
+
+- verify that `DINOv3` and `V-JEPA` can be loaded locally
+- record latent shape and compatibility requirements before starting training
+
+Current feasibility status:
+
+- `DINOv3 patch`:
+  currently blocked in the validated WSL environment because the official `facebookresearch/dinov3` torch-hub code uses Python `3.10+` union syntax, while the current DINO-WM environment is still Python `3.9`
+- `V-JEPA`:
+  the most promising short-term path; the official `facebookresearch/jepa-wms` route was pushed past dependency cleanup and past checkpoint provisioning
+- current confirmed `V-JEPA` progress:
+  the official giant checkpoint was provisioned locally and the pretrained visual encoder weights were shown to load successfully
+- current confirmed `V-JEPA` blocker:
+  following the full official AC-predictor path triggers very large memory allocation, and a later encoder-only probe with `vit_giant_xformers` still did not return a clean local feature-shape result
+- practical implication:
+  `V-JEPA` is no longer blocked at "missing package" or "missing checkpoint"; it is now in encoder-only integration territory
+- `DINO-Tok`:
+  currently only theoretical for this local project phase; arXiv presence is confirmed, but no local implementation path or official code-and-checkpoint path has been grounded in the current workspace
+- `VFM-VAE`:
+  similar to `DINO-Tok`; arXiv presence is confirmed, but there is still no verified local code path, checkpoint path, or drop-in encoder interface for the current DINO-WM stack
+
+Current active long-running step:
+
+- the V-JEPA checkpoint-provisioning phase is complete
+- the next real experiment is now:
+  build or probe an encoder-only `V-JEPA` wrapper that can expose patch-style latent features to the existing DINO-WM predictor
+
 ## Final Closeout Summary
 
 The cleanest current reading of the project is:
@@ -205,6 +260,33 @@ The cleanest current reading of the project is:
 - the CLS-side larger-sample reevaluation should be treated as partial evidence
 - `Wall` pretrained sanity passed cleanly
 - `PushT` pretrained sanity improved under a stronger budget, but still did not reach a completed successful evaluation
+
+## One-Week Innovation Options
+
+If the project only has about one week left, the best extension is not automatically "add more encoders". A smaller methodological extension can be more useful than a larger integration task.
+
+Recommended options:
+
+- `uncertainty-aware planning`
+  - let predicted uncertainty affect planning cost directly rather than only training loss
+- `horizon-sensitivity analysis`
+  - compare how representations and dynamics degrade as rollout horizon increases
+- `robustness evaluation`
+  - compare model behavior under simple perturbations such as noise, crop changes, or dropped frames
+- `spatial-structure middle ablations`
+  - test intermediate variants between full patch tokens and CLS
+
+Practical priority for a short project:
+
+1. uncertainty-aware planning
+2. horizon-sensitivity analysis
+3. robustness evaluation
+4. one additional encoder family such as `DINOv3` or `V-JEPA`
+
+Interpretation:
+
+- the first three options usually give clearer new conclusions per hour of work
+- additional encoder integration is still useful, but it is mostly an engineering-heavy extension
 
 ## Current Sanity Results
 

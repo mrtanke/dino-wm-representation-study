@@ -62,6 +62,17 @@ Possible additions:
 
 This layer is not implemented yet and should only be attempted after Layer B is complete.
 
+Feasibility snapshot as of the current local pass:
+
+- `DINOv3`:
+  blocked by Python `3.9` compatibility in the validated WSL environment
+- `V-JEPA`:
+  the only branch that has progressed into real encoder-level integration work
+- `DINO-Tok`:
+  still only a paper-level target in the current workspace; no verified official local code or checkpoint path has been established
+- `VFM-VAE`:
+  also still only a paper-level target in the current workspace; no verified official local code or checkpoint path has been established
+
 ## 3. Research Questions
 
 ### Q1. Representation
@@ -318,6 +329,24 @@ Important decision:
 - do not spend more time on shard-A reruns for this setting
 - `seed2 CLS + deterministic` shard A was also stopped after stalling without `final_eval`
 - this seed-2 CLS branch is now optional unfinished work, not a blocker for closeout
+
+### Stage 4. Encoder-3 and Encoder-4 Integration
+
+Purpose:
+
+- extend the project beyond the completed `DINOv2 patch / CLS` core without reopening the entire experimental matrix at once
+
+Current local read:
+
+- `DINOv3`:
+  checked and blocked in Python `3.9`
+- `V-JEPA`:
+  checkpointed and partially validated, but still not exposed through an encoder-only wrapper compatible with the local DINO-WM training stack
+
+Immediate next step:
+
+- prefer `V-JEPA` encoder-only integration over any further work on `DINOv3`
+- defer `DINO-Tok` and `VFM-VAE` until a real official code-and-weight path is identified
 - `seed2 CLS + gaussian` shard A was attempted twice and also failed to reach `final_eval`
 - do not continue the remaining seed-2 CLS branch in the main closeout path
 
@@ -360,6 +389,81 @@ Required before starting:
 Status:
 
 - deferred
+
+## 6.1 Encoder-3 and Encoder-4 Ownership Plan
+
+The original `DINOv2 patch` and `DINOv2 CLS` branches are already being handled elsewhere. The next local workstream is therefore focused on the third and fourth encoder slots only.
+
+Assigned scope for this branch:
+
+- encoder 3:
+  `DINOv3 patch`
+- encoder 4:
+  `V-JEPA`
+- tasks:
+  `point_maze` and `wall_single`
+- training target:
+  `10 epochs`
+- evaluation target:
+  local planning plus shard-based larger-sample follow-up
+
+Decision rule for this branch:
+
+- start with `deterministic` only
+- do not add Gaussian for the new encoders until deterministic training and planning both work on both tasks
+
+Execution order:
+
+1. feasibility check for `DINOv3`
+2. feasibility check for `V-JEPA`
+3. `point_maze` deterministic sanity for each new encoder
+4. `wall_single` deterministic sanity for each new encoder
+5. `10 epoch` deterministic runs on both tasks
+6. local planning evaluation plus two-shard larger-sample follow-up
+
+Minimum experiment matrix for encoder 3 and 4:
+
+- `DINOv3 patch + deterministic + point_maze`
+- `DINOv3 patch + deterministic + wall_single`
+- `V-JEPA + deterministic + point_maze`
+- `V-JEPA + deterministic + wall_single`
+
+Estimated time for this branch:
+
+- DINOv3 integration and sanity:
+  about `2` to `4` hours
+- V-JEPA integration and sanity:
+  about `3` to `6` hours
+- four deterministic `10 epoch` runs across two tasks:
+  about `4` to `12` hours
+- local planning evaluation:
+  about `4` to `10` hours
+
+Total estimate for encoder-3 and encoder-4 deterministic coverage:
+
+- about `11` to `28` hours
+
+Current feasibility snapshot:
+
+- `DINOv3 patch`
+  - status:
+    `blocked`
+  - blocker:
+    the official `facebookresearch/dinov3` hub path currently fails under Python `3.9` because it uses Python `3.10+` union syntax such as `float | None`
+  - near-term handling:
+    do not start the `10 epoch` DINOv3 branch until there is a Python-version-compatible loading path
+
+- `V-JEPA`
+  - status:
+    `active feasibility`
+  - blocker:
+    the official `facebookresearch/jepa-wms` hub path now reaches model construction, but stops because it expects the opensource V-JEPA visual checkpoint at `${JEPAWM_OSSCKPT}/vjepa2_opensource/vjepa2_vit_giant.pth`
+  - checkpoint note:
+    the official V-JEPA v2 opensource encoder files are large; the public `vitl.pt` checkpoint is about `5.1 GB`, and the `vitg.pt` checkpoint is about `16.5 GB`
+  - near-term handling:
+    decide whether to prepare the required opensource checkpoint locally; if yes, continue with latent-shape verification and a deterministic sanity run after the checkpoint is in place
+  - current active step:
+    local provisioning of the required V-JEPA v2 giant checkpoint is in progress so that the next experiment can move from dependency cleanup to actual encoder loading
 
 ## 7. Current Evidence
 
@@ -489,3 +593,102 @@ Examples:
 - verify that scripts and commands still match the tracker
 - prepare a short rerun guide for the main completed experiments
 - sync the latest docs and status updates to the collaboration repository
+
+## 13. One-Week Innovation Options Beyond Additional Encoders
+
+If the project window is only about one week, the most useful innovation is not necessarily "add more encoder names". A better rule is to prefer small extensions that produce a clearer new conclusion.
+
+### 13.1 Highest-Value Low-to-Medium-Risk Options
+
+#### A. Uncertainty-Aware Planning
+
+Current Gaussian work changes the training objective, but planning still mostly follows the mean prediction. A stronger extension would let uncertainty influence planning directly.
+
+Examples:
+
+- penalize high-variance rollouts during planning
+- compare risk-neutral and risk-averse planning
+- check whether uncertainty helps mainly at longer horizons
+
+Why this is attractive:
+
+- it builds directly on the implemented Gaussian predictor
+- it adds a real methodological contribution rather than just another loss
+- it is lighter than integrating a completely new representation family
+
+#### B. Horizon-Sensitivity Analysis
+
+Another good one-week contribution is to study how different representations or dynamics variants degrade as rollout horizon grows.
+
+Examples:
+
+- compare short-horizon and long-horizon latent prediction error
+- compare planning quality as horizon increases
+- test whether Gaussian uncertainty becomes more meaningful at larger horizon
+
+Why this is attractive:
+
+- low engineering overhead
+- easy to explain in the final report
+- directly relevant to world-model usefulness
+
+#### C. Robustness Evaluation
+
+Instead of only asking which representation is best under clean inputs, test which one is more stable under simple perturbations.
+
+Examples:
+
+- observation noise
+- brightness or crop perturbations
+- frame drop
+- action noise
+
+Why this is attractive:
+
+- the implementation burden is modest
+- results are often easier to interpret than adding one more large encoder
+- it broadens the contribution without changing the core pipeline
+
+### 13.2 Medium-Risk Representation-Focused Extensions
+
+#### D. Spatial-Structure Middle Ablations
+
+Between patch tokens and CLS token there is a useful middle ground.
+
+Examples:
+
+- pooled patch groups
+- reduced patch grids
+- masked or subsampled patches
+
+Why this is attractive:
+
+- it gives a cleaner answer to how much spatial structure planning actually needs
+- it is usually cheaper than integrating a completely different external model
+
+### 13.3 Higher-Risk Options
+
+#### E. Additional Encoder Families
+
+This includes:
+
+- `DINOv3`
+- `V-JEPA`
+- `DINO-Tok`
+- `VFM-VAE`
+
+These can still be worth doing, but they are no longer the only or even the best innovation path for a short project. Their main cost is integration complexity, environment preparation, and checkpoint management.
+
+### 13.4 Recommended Priority For A One-Week Project
+
+If time is limited, the recommended innovation priority is:
+
+1. `uncertainty-aware planning`
+2. `horizon-sensitivity analysis`
+3. `robustness evaluation`
+4. `one new encoder family`
+
+Practical interpretation:
+
+- if the goal is a clear, defensible project contribution, the first three are often better than trying to integrate many new foundation models
+- if the goal is a third and fourth encoder branch specifically, then `DINOv3` and `V-JEPA` remain the most reasonable choices, but they should be treated as heavier engineering tasks

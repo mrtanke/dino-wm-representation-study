@@ -1112,3 +1112,166 @@ Interpretation:
 
 - increasing the planning budget to something much closer to the official PushT configuration was enough to produce a clean completed successful run
 - this suggests the earlier PushT failures were caused more by aggressive budget reduction than by a fundamentally broken local setup
+
+## 2026-03-26 Encoder-3 and Encoder-4 Feasibility Work
+
+The local workstream then shifted to encoder 3 and encoder 4, because the first two encoder branches were already being handled elsewhere.
+
+Target scope for this branch:
+
+- encoder 3:
+  `DINOv3 patch`
+- encoder 4:
+  `V-JEPA`
+- target tasks:
+  `point_maze` and `wall_single`
+- target training scope:
+  deterministic first, `10 epochs`
+
+### DINOv3 feasibility
+
+WSL load attempt:
+
+```bash
+python - <<'PY'
+import torch
+torch.hub.load('facebookresearch/dinov3', 'dinov3_vits16')
+PY
+```
+
+Observed blocker:
+
+- the official hub code failed before model construction because it uses Python `3.10+` union syntax
+- the validated local DINO-WM environment is still Python `3.9`
+
+Interpretation:
+
+- `DINOv3` is currently blocked in the existing environment
+- this is an environment-compatibility blocker, not just a missing package
+
+### V-JEPA feasibility
+
+WSL load attempt:
+
+```bash
+python - <<'PY'
+import torch
+torch.hub.load('facebookresearch/jepa-wms', 'vjepa2_ac_droid')
+PY
+```
+
+Current progress:
+
+- the hub path does begin loading under the current environment
+- several missing dependencies were installed during the feasibility pass
+- the dependency chain was then pushed further by installing:
+  `clusterscope`, `ruamel.yaml`, and `timm`
+- the latest confirmed blocker is now the required opensource V-JEPA visual checkpoint path:
+  `${JEPAWM_OSSCKPT}/vjepa2_opensource/vjepa2_vit_giant.pth`
+
+Interpretation:
+
+- `V-JEPA` is still not integrated, but it currently looks more feasible than `DINOv3`
+- the branch has progressed from package-level blockers to a real checkpoint-preparation blocker
+- official checkpoint size is also non-trivial:
+  - `vitl.pt` is about `5.1 GB`
+  - `vitg.pt` is about `16.5 GB`
+- the next decision is no longer "fix one more import"; it is whether to provision the required opensource checkpoint locally
+
+### Current active provisioning step
+
+A local background download was started for the required V-JEPA v2 giant opensource checkpoint:
+
+- target local path:
+  `C:\Users\zack\ModelCache\vjepa2_vit_giant.pth`
+
+This download is meant to unblock the next real experiment:
+
+- retry `V-JEPA` loading with `JEPAWM_OSSCKPT` configured
+- inspect the resulting encoder object
+- verify latent output shape before any DINO-WM integration work
+
+## 2026-03-26 Later-Encoder Feasibility Update
+
+The later-encoder pass was extended beyond `DINOv3` and `V-JEPA` to also reassess the remaining paper-level candidates:
+
+- `DINO-Tok`
+- `VFM-VAE`
+
+### DINOv3
+
+Status:
+
+- still blocked
+
+Reason:
+
+- both the official `facebookresearch/dinov3` route and the local fallback route remain incompatible with the validated Python `3.9` environment because the code uses Python `3.10+` union typing syntax
+
+### V-JEPA
+
+Status:
+
+- progressed further than all other later-encoder branches
+
+Confirmed progress:
+
+- the giant opensource checkpoint was fully downloaded locally
+- the checkpoint was linked into:
+  `/home/zack/jepawm_ossckpt/vjepa2_opensource/vjepa2_vit_giant.pth`
+- the official `jepa-wms` path previously loaded pretrained visual-encoder weights successfully before failing deeper in the full AC predictor path
+
+Current blocker:
+
+- the full official AC predictor path hits very large memory allocation
+- a later encoder-only probe using `vit_giant_xformers` and `pred_type=none` did not produce a clean local feature-shape result yet
+
+Interpretation:
+
+- `V-JEPA` is now clearly beyond package-level feasibility
+- the right next step is not "install one more dependency"
+- the right next step is an encoder-only wrapper or a more faithful minimal encoder extraction path
+
+### DINO-Tok
+
+Status:
+
+- not grounded enough to begin local integration
+
+Confirmed evidence:
+
+- arXiv presence is confirmed:
+  `DINO-Tok: Adapting DINO for Visual Tokenizers`
+- repeated GitHub API repository searches using terms around `DINO-Tok` did not surface an obvious official repository path during this pass
+
+Interpretation:
+
+- this branch is still paper-level only in the current local workspace
+- there is not yet a practical code-and-checkpoint route to treat it as the next experiment
+
+### VFM-VAE
+
+Status:
+
+- also not grounded enough to begin local integration
+
+Confirmed evidence:
+
+- arXiv presence is confirmed:
+  `Vision Foundation Models Can Be Good Tokenizers for Latent Diffusion Models`
+- repeated GitHub API repository searches using terms around `VFM-VAE` did not surface an obvious official repository path during this pass
+
+Interpretation:
+
+- like `DINO-Tok`, this remains a theoretical extension rather than a runnable local branch
+
+### Current practical ranking
+
+From most actionable to least actionable in the current project state:
+
+1. `V-JEPA`
+2. `DINOv3`
+3. `DINO-Tok`
+4. `VFM-VAE`
+
+The practical next experiment should continue on `V-JEPA`, not on the other later-encoder branches.
