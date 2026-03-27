@@ -71,7 +71,12 @@ Feasibility snapshot as of the current local pass:
 - `DINO-Tok`:
   still only a paper-level target in the current workspace; no verified official local code or checkpoint path has been established
 - `VFM-VAE`:
-  also still only a paper-level target in the current workspace; no verified official local code or checkpoint path has been established
+  now upgraded from paper-level to code-available, but still not near-term drop-in:
+  - official repo identified:
+    `https://github.com/tianciB/VFM-VAE`
+  - official model page identified:
+    `https://huggingface.co/tiancibi/VFM-VAE`
+  - integration cost remains high because the release is a VAE/tokenizer system rather than a simple frozen encoder package
 
 ## 3. Research Questions
 
@@ -346,7 +351,15 @@ Current local read:
 Immediate next step:
 
 - prefer `V-JEPA` encoder-only integration over any further work on `DINOv3`
-- defer `DINO-Tok` and `VFM-VAE` until a real official code-and-weight path is identified
+- defer `DINO-Tok`
+- keep `VFM-VAE` as a documented but higher-cost fallback after `V-JEPA`, not as the next local experiment
+
+Latest practical evidence:
+
+- the smaller Hugging Face `V-JEPA vitl` checkpoint is now a better local bridge than the earlier giant-only route
+- the official `encoder` weights from `facebook/vjepa2-vitl-fpc64-256` were remapped into `transformers.VJEPA2Model` with zero missing encoder keys
+- the same remapped encoder also completed a minimal CPU forward pass and returned patch-style latent tensors of shape `(1, 256, 1024)` for a `(1, 2, 3, 256, 256)` dummy video input
+- `VFM-VAE` has now advanced from "repo found" to "repo plus checkpoint structure inspected", but it still looks like a heavier system-level integration than `V-JEPA`
 - `seed2 CLS + gaussian` shard A was attempted twice and also failed to reach `final_eval`
 - do not continue the remaining seed-2 CLS branch in the main closeout path
 
@@ -692,3 +705,84 @@ Practical interpretation:
 
 - if the goal is a clear, defensible project contribution, the first three are often better than trying to integrate many new foundation models
 - if the goal is a third and fourth encoder branch specifically, then `DINOv3` and `V-JEPA` remain the most reasonable choices, but they should be treated as heavier engineering tasks
+
+## 2026-03-27 V-JEPA Integration Status
+
+Current repository-level progress:
+
+- `models/vjepa.py`
+- `conf/encoder/vjepa.yaml`
+- `conf/train_vjepa_wsl.yaml`
+
+Smoke-test result:
+
+- image input: `(2, 3, 224, 224)`
+- encoder output: `(2, 196, 1024)`
+
+Current practical blocker:
+
+- the WSL `dino_wm` environment currently has `transformers==4.21.1`
+- the same environment currently has `huggingface_hub==1.8.0`
+- this currently breaks `transformers` import in that environment
+
+So the next real step for encoder 4 is not more feasibility probing; it is refreshing the WSL package stack so the prepared `1 epoch` sanity config can actually run.
+
+## 2026-03-27 Later-Encoder Execution Update
+
+The WSL package stack was refreshed for later-encoder work:
+
+- `transformers==4.57.6`
+- `huggingface_hub==0.36.0`
+- `tokenizers==0.22.1`
+
+This cleared the earlier import blocker for both `V-JEPA` and `SigLIP2`.
+
+### V-JEPA
+
+Execution status:
+
+- `models/vjepa.py` works inside WSL
+- `conf/train_vjepa_wsl.yaml` was launched successfully
+- the run entered the real `point_maze` training loop
+
+Observed runtime:
+
+- about `20 minutes` to reach roughly `4%` of epoch 1
+- estimated epoch-1 remainder around `7 hours`
+- projected `10 epoch` runtime around `3` to `3.5` days
+
+Decision:
+
+- the run was stopped manually
+- reason: the training path is now proven, but the runtime is currently not practical for local iteration
+
+### SigLIP2
+
+New repo path:
+
+- `models/siglip2.py`
+- `conf/encoder/siglip2.yaml`
+- `conf/train_siglip2_wsl.yaml`
+
+Execution status:
+
+- WSL smoke test returns `(1, 196, 1024)`
+- the `point_maze` `1 epoch` sanity run was launched successfully
+- it was then stopped manually to free the GPU
+
+Interpretation:
+
+- `SigLIP2` is currently the lightest practical later-encoder route that has already crossed into actual local training execution
+
+### VFM-VAE
+
+Current code-compatibility status:
+
+- `networks.utils.vfm_utils` imports successfully
+- `networks.generator` exposed a Python-3.10-style union annotation in `convnext_utils.py`
+- that specific local syntax blocker was patched to a Python-3.9-compatible form in the local cache copy
+
+Interpretation:
+
+- `VFM-VAE` is now in compatibility-cleanup mode rather than discovery mode
+- the next step is a clean generator import retry and then a minimal encoder extraction attempt

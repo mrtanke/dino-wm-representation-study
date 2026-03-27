@@ -1253,17 +1253,24 @@ Interpretation:
 
 Status:
 
-- also not grounded enough to begin local integration
+- now partially grounded, but still heavy for the current project phase
 
 Confirmed evidence:
 
 - arXiv presence is confirmed:
   `Vision Foundation Models Can Be Good Tokenizers for Latent Diffusion Models`
-- repeated GitHub API repository searches using terms around `VFM-VAE` did not surface an obvious official repository path during this pass
+- an official repository was identified:
+  `https://github.com/tianciB/VFM-VAE`
+- an official Hugging Face model page was identified:
+  `https://huggingface.co/tiancibi/VFM-VAE`
+- the repository structure confirms a full tokenizer / VAE training stack
+- the Hugging Face release contains VAE and diffusion checkpoints rather than a small standalone planning encoder package
 
 Interpretation:
 
-- like `DINO-Tok`, this remains a theoretical extension rather than a runnable local branch
+- this is no longer "missing", but it is still not a natural drop-in replacement for the local DINO-WM encoder slot
+- the repo recommends a PyTorch `2.4.0` / Python `3.10` environment and centers on ImageNet-scale VAE training
+- for the current DINO-WM course-project branch, `VFM-VAE` should be treated as a higher-cost future integration path, not the next practical experiment
 
 ### Current practical ranking
 
@@ -1275,3 +1282,200 @@ From most actionable to least actionable in the current project state:
 4. `VFM-VAE`
 
 The practical next experiment should continue on `V-JEPA`, not on the other later-encoder branches.
+
+## 2026-03-27 Overnight Encoder Feasibility Queue
+
+To avoid wasting the overnight window on unstable reruns, the next long-running queue was switched to checkpoint provisioning and structure probing for the later encoder branches.
+
+Scheduled overnight tasks:
+
+1. clone or refresh the official `VFM-VAE` repository locally
+2. download the official `VFM-VAE` stage-3 tokenizer checkpoint from Hugging Face
+3. download the official `facebook/vjepa2-vitl-fpc64-256` `original/model.pth`
+4. inspect both checkpoints for top-level structure and likely integration keys
+5. copy the smaller `V-JEPA vitl` checkpoint into the WSL checkpoint area for the next local encoder-only probe
+
+Local launcher:
+
+- `scripts/run_overnight_encoder_feasibility.ps1`
+
+Log directory:
+
+- `logs/overnight_encoder_feasibility`
+
+Stable follow-up launcher:
+
+- `logs/overnight_encoder_feasibility/download_and_probe.py`
+
+The direct `cmd.exe + python -u` runner was started after the first PowerShell-only queue showed weak progress visibility. This replacement runner is responsible for:
+
+1. downloading the official `VFM-VAE` stage-3 tokenizer checkpoint
+2. downloading the official `facebook/vjepa2-vitl-fpc64-256` `original/model.pth`
+3. printing checkpoint-structure information once each file completes
+
+## 2026-03-27 Morning Feasibility Results
+
+The overnight replacement runner completed both downloads and both checkpoint-structure probes.
+
+### VFM-VAE
+
+Downloaded file:
+
+- `C:\Users\zack\ModelCache\VFM-VAE-model\checkpoints_imagenet256\vfm_vae\vfm_vae_f16d32_siglip2_44m_after_stage_3_patchgan_fine_tuning_legacy.pth`
+
+Observed top-level keys:
+
+- `G`
+- `D`
+- `G_ema`
+- `training_set_kwargs`
+
+Observed structure detail:
+
+- `G` and `G_ema` both contain nested `vfm_encoder...vision_model...` weights
+- this confirms that the released checkpoint is not just a diffusion-side artifact; it does contain an extractable vision-backbone branch inside the tokenizer system
+
+Interpretation:
+
+- `VFM-VAE` is now clearly code-plus-checkpoint feasible
+- however, it still looks like a whole-generator extraction problem rather than a simple frozen-encoder drop-in
+
+### V-JEPA vitl
+
+Downloaded file:
+
+- `C:\Users\zack\ModelCache\VJEPA2-vitl\original\model.pth`
+
+Observed top-level keys:
+
+- `encoder`
+- `predictor`
+- `target_encoder`
+- `opt`
+- `scaler`
+- `epoch`
+
+Additional compatibility probe:
+
+- the `encoder` state dict was remapped into `transformers.VJEPA2Model`
+- after key conversion, encoder loading reached:
+  - `ENCODER_MISSING_COUNT = 0`
+  - `UNEXPECTED_COUNT = 0`
+- only predictor-side weights remained missing, which is acceptable for an encoder-only integration plan
+
+Minimal forward probe:
+
+- the remapped encoder path was exercised on CPU with:
+  - input shape: `(1, 2, 3, 256, 256)`
+  - `skip_predictor=True`
+- observed outputs:
+  - `last_hidden_state`: `(1, 256, 1024)`
+  - `masked_hidden_state`: `(1, 256, 1024)`
+- measured forward time:
+  - about `1.61 s` on the local CPU path used for the probe
+
+Interpretation:
+
+- this is the strongest feasibility result so far for encoder 4
+- checkpoint compatibility is no longer the blocker
+- basic encoder-only forward feasibility is no longer the blocker either
+- the next step should be an actual local wrapper based on the `vitl` route rather than more giant-checkpoint debugging
+
+## 2026-03-27 Repo Integration Progress For V-JEPA
+
+The repository now contains a minimal local encoder-4 integration path:
+
+- `models/vjepa.py`
+- `conf/encoder/vjepa.yaml`
+- `conf/train_vjepa_wsl.yaml`
+
+Verified local smoke test:
+
+- input shape: `(2, 3, 224, 224)`
+- output shape: `(2, 196, 1024)`
+- patch size: `16`
+- latent mode: `latent_ndim = 2`
+
+This means encoder 4 is no longer only a feasibility note; it now has a DINO-WM-compatible local wrapper and a prepared `1 epoch` sanity config.
+
+Current practical WSL blocker:
+
+- the validated `dino_wm` environment currently has `transformers==4.21.1`
+- the same environment also has `huggingface_hub==1.8.0`
+- this pair is currently incompatible and breaks `transformers` import
+
+So the next blocker is environment readiness, not model-side feasibility.
+
+## 2026-03-27 WSL Refresh And Later-Encoder Training Update
+
+The WSL `dino_wm` environment was then refreshed specifically for later-encoder work:
+
+- `transformers` was upgraded from `4.21.1` to `4.57.6`
+- `huggingface_hub` was adjusted to `0.36.0`
+- `tokenizers` was upgraded to `0.22.1`
+
+This removed the earlier import failure and enabled both `VJEPA2Model` and `SiglipVisionModel` inside the validated WSL environment.
+
+### V-JEPA
+
+After the dependency refresh:
+
+- `models/vjepa.py` worked inside WSL
+- a WSL smoke test again returned `(1, 196, 1024)` on `224x224` image input
+- `conf/train_vjepa_wsl.yaml` was launched successfully on `point_maze`
+
+Observed practical result:
+
+- the run entered the real training loop and reached approximately:
+  - `Epoch 1 Train: 2732 / 72900`
+  - elapsed time about `20 minutes`
+  - estimated remaining time for epoch 1 about `7 hours`
+- extrapolated `10 epoch` runtime was therefore around `3` to `3.5` days
+
+Decision:
+
+- the `V-JEPA` training run was stopped manually
+- reason: the training flow was successfully demonstrated, but the runtime was too slow for the current local schedule
+
+### SigLIP2 / VFM-VAE-backbone Route
+
+To keep progress moving on another encoder family, a lighter route based on the backbone used by `VFM-VAE` was integrated.
+
+New repo files:
+
+- `models/siglip2.py`
+- `conf/encoder/siglip2.yaml`
+- `conf/train_siglip2_wsl.yaml`
+
+Verified local result in WSL:
+
+- `SigLIP2Encoder` loaded successfully from `google/siglip2-large-patch16-512`
+- smoke test output on `224x224` input:
+  - `(1, 196, 1024)`
+
+Training status:
+
+- the `point_maze` `1 epoch` sanity run for `SigLIP2` was started successfully
+- it was then stopped manually to free the GPU for the next encoder pass
+
+Interpretation:
+
+- both `V-JEPA` and `SigLIP2` have now moved beyond feasibility and into actual local training-flow execution
+- `V-JEPA` is currently limited by runtime
+- `SigLIP2` is the lighter practical fallback for continuing representation experiments
+
+### VFM-VAE
+
+The next follow-up targeted the full `VFM-VAE` code path rather than only its SigLIP2 backbone.
+
+Current status:
+
+- `networks.utils.vfm_utils` imports successfully in the current WSL environment
+- `networks.generator` initially failed under Python `3.9` because of a Python-3.10-style union type in:
+  - `networks/utils/convnext_utils.py`
+- that local syntax issue was patched to a Python-3.9-compatible `typing.Union` form in the local cache copy
+
+Interpretation:
+
+- `VFM-VAE` is no longer blocked only by missing code or missing checkpoints
+- it is now in a code-compatibility cleanup phase, with the next step being a clean import retry and then a minimal encoder extraction attempt

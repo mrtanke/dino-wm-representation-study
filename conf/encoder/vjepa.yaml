@@ -1,0 +1,5 @@
+_target_: models.vjepa.VJEPAEncoder
+name: "facebook/vjepa2-vitl-fpc64-256"
+image_size: 224
+input_frames: 2
+local_files_only: false

@@ -233,14 +233,31 @@ Current feasibility status:
   the most promising short-term path; the official `facebookresearch/jepa-wms` route was pushed past dependency cleanup and past checkpoint provisioning
 - current confirmed `V-JEPA` progress:
   the official giant checkpoint was provisioned locally and the pretrained visual encoder weights were shown to load successfully
+- newer confirmed `V-JEPA` progress:
+  the smaller Hugging Face `facebook/vjepa2-vitl-fpc64-256` checkpoint was also provisioned locally, and its encoder weights were remapped into `transformers.VJEPA2Model` with zero missing encoder keys
+- newest confirmed `V-JEPA` progress:
+  the remapped `V-JEPA vitl` encoder completed a minimal CPU forward pass on a dummy `(1, 2, 3, 256, 256)` video input and returned:
+  - `last_hidden_state`: `(1, 256, 1024)`
+  - `masked_hidden_state`: `(1, 256, 1024)`
 - current confirmed `V-JEPA` blocker:
-  following the full official AC-predictor path triggers very large memory allocation, and a later encoder-only probe with `vit_giant_xformers` still did not return a clean local feature-shape result
+  the remaining gap is no longer checkpoint compatibility or basic forward feasibility; it is now the engineering step of wrapping this encoder-only path into the local DINO-WM encoder interface
 - practical implication:
-  `V-JEPA` is no longer blocked at "missing package" or "missing checkpoint"; it is now in encoder-only integration territory
+  `V-JEPA` is now firmly in encoder-only integration territory and is the strongest candidate for encoder 4
 - `DINO-Tok`:
   currently only theoretical for this local project phase; arXiv presence is confirmed, but no local implementation path or official code-and-checkpoint path has been grounded in the current workspace
 - `VFM-VAE`:
-  similar to `DINO-Tok`; arXiv presence is confirmed, but there is still no verified local code path, checkpoint path, or drop-in encoder interface for the current DINO-WM stack
+  no longer missing; an official repository and model page were identified during the later feasibility pass:
+  - GitHub:
+    `https://github.com/tianciB/VFM-VAE`
+  - Hugging Face:
+    `https://huggingface.co/tiancibi/VFM-VAE`
+  however, the current evidence still says this is a heavy integration route rather than a drop-in encoder:
+  - the repo is a full VAE/tokenizer training stack, not a world-model encoder package
+  - the default verified setup targets PyTorch `2.4.0` and Python `3.10`
+  - the released assets are VAE and diffusion checkpoints, not a DINO-WM-style frozen planning encoder
+  practical implication:
+  `VFM-VAE` is now paper-plus-code level feasible, but still much less direct than `V-JEPA` for the current local DINO-WM integration task
+  a new concrete positive sign is that the released stage-3 checkpoint was downloaded locally and its top-level structure was inspected successfully; the checkpoint contains `G`, `D`, `G_ema`, and `training_set_kwargs`, and `G_ema` clearly contains a nested `vfm_encoder`
 
 Current active long-running step:
 
@@ -300,6 +317,86 @@ Interpretation:
 | E3_plan | DINOv2 patch | gaussian | `success_rate=1.0`, `mean_state_dist=2.3579` |
 | E4_train | DINOv2 CLS | gaussian | `val_z_mse_loss=0.0329`, `val_loss=-2.6678` |
 | E4_plan | DINOv2 CLS | gaussian | `success_rate=1.0`, `mean_state_dist=1.1232` |
+
+## 2026-03-27 V-JEPA Repo Integration Update
+
+- `models/vjepa.py` now provides a minimal local `V-JEPA` encoder wrapper
+- `conf/encoder/vjepa.yaml` now exposes that wrapper to Hydra
+- `conf/train_vjepa_wsl.yaml` now provides a `1 epoch` `point_maze` sanity entry with decoder disabled
+
+Verified local smoke test:
+
+- input: `(2, 3, 224, 224)`
+- output: `(2, 196, 1024)`
+
+Current blocker for a true WSL training run:
+
+- the validated `dino_wm` environment currently has `transformers==4.21.1`
+- the same environment currently has `huggingface_hub==1.8.0`
+- this breaks `transformers` import before `VJEPA2Model` can be exercised
+
+Interpretation:
+
+- encoder 4 has reached repository-level interface integration
+- the next blocker is the WSL dependency stack, not `V-JEPA` representation feasibility
+
+## 2026-03-27 Later-Encoder Runtime Update
+
+The WSL environment for later encoders was refreshed so that the new Hugging Face model classes could run inside the existing local training stack.
+
+Environment update:
+
+- `transformers = 4.57.6`
+- `huggingface_hub = 0.36.0`
+- `tokenizers = 0.22.1`
+
+This unblocked both `V-JEPA` and `SigLIP2` imports inside the WSL `dino_wm` environment.
+
+### V-JEPA
+
+- WSL smoke test still returns `(1, 196, 1024)` on `224x224` input
+- `conf/train_vjepa_wsl.yaml` was launched successfully on `point_maze`
+- the run entered the real training loop, but the observed speed was too slow for local iteration:
+  - about `20` minutes to reach roughly `4%` of epoch 1
+  - extrapolated `10 epoch` runtime: around `3` to `3.5` days
+
+Practical conclusion:
+
+- the `V-JEPA` training flow is now proven to start correctly
+- but the run was stopped manually because the runtime is currently too high for the local schedule
+
+### SigLIP2
+
+To keep another encoder path moving, a lighter backbone route was integrated:
+
+- `models/siglip2.py`
+- `conf/encoder/siglip2.yaml`
+- `conf/train_siglip2_wsl.yaml`
+
+WSL smoke test:
+
+- output on `224x224` input:
+  - `(1, 196, 1024)`
+
+Training status:
+
+- the `point_maze` `1 epoch` sanity run for `SigLIP2` was started successfully
+- it was then manually stopped to free the GPU for the next encoder pass
+
+Practical conclusion:
+
+- `SigLIP2` is now the lightest later-encoder route that has reached actual local training-flow execution
+
+### VFM-VAE
+
+- the full `VFM-VAE` code path was pushed one step further
+- `networks.generator` was found to fail under Python `3.9` because of a Python-3.10-style union annotation in `convnext_utils.py`
+- that syntax point was patched locally in the cache copy to a `typing.Union` form
+
+Practical conclusion:
+
+- `VFM-VAE` is now in code-compatibility cleanup rather than pure discovery
+- it remains heavier than the `SigLIP2` backbone route, but it is no longer purely paper-level
 
 ## Formal Matrix Results
 

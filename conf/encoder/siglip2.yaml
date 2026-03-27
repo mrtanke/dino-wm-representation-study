@@ -1,0 +1,4 @@
+_target_: models.siglip2.SigLIP2Encoder
+name: "google/siglip2-large-patch16-512"
+image_size: 224
+local_files_only: false
