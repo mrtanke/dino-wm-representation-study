@@ -115,6 +115,12 @@ def main() -> int:
 
     env = os.environ.copy()
     env["WANDB_MODE"] = args.wandb_mode
+    existing_pythonpath = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = (
+        f"{repo_root}{os.pathsep}{existing_pythonpath}"
+        if existing_pythonpath
+        else str(repo_root)
+    )
     if args.dataset_dir:
         env["DATASET_DIR"] = args.dataset_dir
 
