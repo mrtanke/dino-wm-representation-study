@@ -17,6 +17,7 @@ CKPT_BASE="${REPO_DIR}/course_runs"
 STATUS_DIR="${REPO_DIR}/logs/large_eval_status"
 
 export DATASET_DIR="${HOME}/dino_wm_data"
+export PYTHONPATH="${REPO_DIR}:${PYTHONPATH:-}"
 export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:${HOME}/.mujoco/mujoco210/bin:/usr/lib/nvidia"
 export MUJOCO_PY_MUJOCO_PATH="${HOME}/.mujoco/mujoco210"
 export MUJOCO_GL="egl"

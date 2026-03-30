@@ -1,0 +1,303 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage[numbers]{natbib}
+\usepackage{xcolor}
+
+\title{Representation Granularity and Gaussian Transition Heads in Action-Conditioned World Models:\\
+A DINO-WM Course Project Study}
+\author{Course Project Team}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We study how latent representation and transition modeling affect action-conditioned planning in DINO-WM. The completed core evidence focuses on a controlled PointMaze ablation: DINOv2 patch tokens versus DINOv2 CLS tokens, crossed with deterministic versus Gaussian latent transitions. We reproduced the pretrained PointMaze planning baseline, implemented the Gaussian transition head, and completed a formal \(3\)-seed \( \text{patch/CLS} \times \text{deterministic/Gaussian} \) matrix. Because the original \(n\_\text{evals}=3\) evaluation saturated the binary success metric, we also added a larger-sample planning follow-up and treated \texttt{mean\_state\_dist} as the primary planning metric. Under this PointMaze training and evaluation budget, DINOv2 patch plus deterministic dynamics remains the strongest completed baseline, while DINOv2 CLS plus deterministic dynamics performs surprisingly close to it. By contrast, the Gaussian extension improves training losses without yielding a stable planning advantage, suggesting that a Gaussian likelihood head alone is not sufficient to improve downstream planning. We also report preliminary exploratory PointMaze runs for VFM-VAE and V-JEPA2, but treat them only as exploratory evidence because they were obtained under a different and less controlled recipe.
+\end{abstract}
+
+\section{Introduction}
+World models aim to predict future states conditioned on actions and then use those predictions for planning. DINO-WM is a strong recent baseline because it combines frozen visual features from DINOv2, a latent transition model, and test-time model-predictive planning \citep{zhou2024dinowm}. Its central claim is that strong pretrained visual features can substantially improve downstream planning quality.
+
+This project studies two questions while keeping the high-level pipeline fixed:
+\[
+\text{image encoder} \rightarrow \text{latent transition model} \rightarrow \text{planning}.
+\]
+
+The first is a \textbf{representation study}: how much does the latent visual representation matter for action-conditioned prediction and planning? The second is a \textbf{dynamics study}: can a lightweight stochastic extension improve the latent transition model compared with a purely deterministic predictor?
+
+The broader project motivation is to use DINO-WM as a clean testbed for encoder comparison. In that larger framing, DINOv2 patch tokens serve as the reference representation, and the longer-term goal is to compare them not only against DINOv2 CLS but also against predictive and reconstructive latents from newer foundation-model families. The present paper reports the most controlled completed portion of that agenda: a PointMaze-centered ablation that isolates representation granularity within DINOv2 and tests a lightweight Gaussian transition extension.
+
+The original project plan was broader than the final completed matrix. Our starting goal was to study representation quality by replacing only the visual encoder while keeping the transition model and planning pipeline as stable as possible. In practice, that agenda split into two phases: first establish a reliable local DINO-WM pipeline on PointMaze and produce a defensible controlled ablation, then extend the same pipeline to additional encoder families. The completed evidence in this draft comes from the first phase, which we narrowed to the following controlled matrix:
+
+\begin{itemize}
+\item DINOv2 patch tokens as the main baseline
+\item DINOv2 CLS token as the key representation ablation
+\item deterministic latent transition
+\item Gaussian latent transition
+\end{itemize}
+
+This scope is sufficient to answer the two central project questions while keeping implementation and evaluation manageable. The broader representation-study motivation therefore remains part of the project narrative, but the quantitative evidence in this draft is centered on the controlled PointMaze core.
+
+The paper makes three concrete contributions. First, it provides a controlled PointMaze comparison between DINOv2 patch and CLS representations inside the DINO-WM pipeline. Second, it implements and evaluates a lightweight Gaussian transition head under the same planning framework. Third, it documents why larger-sample evaluation and \texttt{mean\_state\_dist} are necessary for interpreting PointMaze planning differences once \texttt{success\_rate} saturates.
+
+\section{Method}
+\subsection{DINO-WM Pipeline}
+The repository follows the standard DINO-WM structure:
+\begin{itemize}
+\item \textbf{Observation model}: a frozen DINOv2 encoder maps each image to latent features.
+\item \textbf{Transition model}: a ViT-based dynamics model predicts the next latent state from past latent states and actions.
+\item \textbf{Decoder}: an image decoder is optional and mainly used for visualization.
+\item \textbf{Planner}: a CEM-style MPC planner searches action sequences in latent space.
+\end{itemize}
+
+\subsection{Representation Study}
+We compare two encoders already supported by the repository:
+\begin{itemize}
+\item DINOv2 patch tokens \citep{oquab2023dinov2}
+\item DINOv2 CLS token \citep{caron2021emerging}
+\end{itemize}
+
+The contrast is simple: patch tokens preserve spatial structure and local semantics, while CLS compresses the image into a single global token. Our initial hypothesis was that CLS would be weaker for control because it discards spatial detail that may matter for action-conditioned prediction.
+
+\subsection{Dynamics Study}
+The original deterministic model predicts
+\[
+(z_t, a_t) \rightarrow \hat z_{t+1}.
+\]
+We extend it to a Gaussian latent model:
+\[
+(z_t, a_t) \rightarrow (\mu_{t+1}, \log \sigma^2_{t+1}).
+\]
+
+Training uses Gaussian negative log-likelihood with a small MSE auxiliary term:
+\begin{verbatim}
+logvar = torch.clamp(logvar, -5, 5)
+var = torch.exp(logvar)
+gaussian_nll = ((target - mu) ** 2 / var + logvar).mean()
+loss = gaussian_nll + 0.1 * mse(mu, target)
+\end{verbatim}
+
+For rollout and planning, we use \(\mu\) as the predicted latent state.
+
+\section{Experimental Setup}
+\subsection{Environment}
+The official repository targets Linux, so the experiments were run in WSL2 Ubuntu 24.04 with Python 3.9, MuJoCo 2.1, CUDA-enabled PyTorch, and the repository environment created from \texttt{environment.yaml}.
+
+Several practical fixes were required before experiments could run end-to-end:
+\begin{itemize}
+\item WSL-specific Hydra configs replaced the default Slurm launcher.
+\item MuJoCo 2.1 was installed manually for \texttt{mujoco\_py}.
+\item DINOv2 loading was pinned to a Python-3.9-compatible ref.
+\end{itemize}
+
+The CLS ablation also exposed a structural limitation: the current decoder assumes a spatial patch grid, whereas CLS provides a single token. For this reason, CLS experiments were run with the decoder disabled, which is still valid because the decoder is optional in the original DINO-WM design.
+
+\subsection{Comparison Caveat}
+The CLS setting is not identical to the patch setting in every auxiliary component: patch-based runs retain the optional decoder path, whereas CLS-based runs do not. We still regard the comparison as meaningful because the paper focuses on latent prediction and planning quality rather than reconstruction quality, and the decoder is not used by the planner at test time. Decoder-side effects are therefore a caveat, but not the primary variable of interest.
+
+\subsection{Main Environment}
+The main controlled ablation study was performed on \texttt{PointMaze}. This environment is the simplest way to validate the full loop:
+\[
+\text{dataset} \rightarrow \text{training} \rightarrow \text{checkpoint} \rightarrow \text{planning}.
+\]
+
+\subsection{Matrix Configurations}
+The core completed matrix is:
+\begin{itemize}
+\item patch + deterministic
+\item CLS + deterministic
+\item patch + Gaussian
+\item CLS + Gaussian
+\end{itemize}
+
+We ran a \(3\)-seed formal matrix with:
+\begin{itemize}
+\item training epochs: \(3\)
+\item rollout count: \(64\)
+\item planning evaluations: \(n\_\text{evals}=3\)
+\end{itemize}
+
+The resulting conclusions should therefore be interpreted under this specific PointMaze training and evaluation budget rather than as fully budget-invariant claims about representation quality.
+
+\subsection{Larger-Sample Follow-Up}
+Because \(n\_\text{evals}=3\) made \texttt{success\_rate} saturate at \(1.0\), we added a larger-sample planning follow-up. In principle this should have been direct \(n\_\text{evals}=10\) for all checkpoints, but WSL stability was uneven. The practical workaround was:
+\begin{itemize}
+\item direct \(n\_\text{evals}=10\) where stable
+\item otherwise two \(n\_\text{evals}=5\) shards whose results were combined for reporting
+\end{itemize}
+
+\section{Results}
+\subsection{Formal Three-Seed Matrix}
+Table~\ref{tab:formal} summarizes the core formal matrix.
+Unless stated otherwise, the paper's main comparative conclusions are drawn from this formal matrix and its associated planning metric.
+
+\begin{table}[h]
+\centering
+\caption{Three-seed PointMaze formal matrix.}
+\label{tab:formal}
+\begin{tabular}{llccc}
+\toprule
+Encoder & Transition & Mean train loss & Mean val loss & Mean state distance \\
+\midrule
+DINOv2 patch & deterministic & 0.0825 & 0.0429 & 3.2806 \\
+DINOv2 CLS & deterministic & 0.0411 & 0.0240 & 3.3047 \\
+DINOv2 patch & Gaussian & -2.9815 & -3.1785 & 3.7772 \\
+DINOv2 CLS & Gaussian & -3.0751 & -3.2282 & 3.3277 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Figure~\ref{fig:formal-summary} visualizes the same formal matrix from two angles: planning quality and training objective.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\linewidth]{figure/formal_matrix_summary.png}
+\caption{Formal PointMaze matrix summary. Left: mean final state distance across the three-seed matrix. Right: mean training loss across the same matrix. The planning ranking does not mirror the Gaussian training objective advantage.}
+\label{fig:formal-summary}
+\end{figure}
+
+Under the current PointMaze budget, the formal matrix supports three main conclusions:
+\begin{itemize}
+\item DINOv2 patch plus deterministic dynamics remains the strongest overall baseline.
+\item DINOv2 CLS plus deterministic dynamics is much closer to patch than initially expected.
+\item The Gaussian extension improves likelihood-style training losses, but this does not translate into a stable planning advantage.
+\end{itemize}
+
+The second observation is the most consequential representation result of the completed study. If PointMaze had shown a large patch-versus-CLS gap, the interpretation would have been straightforward. Instead, the small gap suggests that, under this particular environment and budget, preserving full spatial patch structure is less decisive than we initially expected.
+
+\subsection{Larger-Sample PointMaze Follow-Up}
+The larger-sample follow-up was added because the formal \(n\_\text{evals}=3\) setting saturated \texttt{success\_rate}. This follow-up is useful as supporting evidence, but it is not a second perfectly symmetric benchmark because the patch branch is more complete than the CLS branch.
+
+Figure~\ref{fig:patch-large} shows the patch branch only, because that branch reached the cleanest multi-seed larger-sample coverage.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.78\linewidth]{figure/patch_large_eval.png}
+\caption{Patch branch larger-sample follow-up. Deterministic patch remains the strongest patch-side baseline across the completed seed groups.}
+\label{fig:patch-large}
+\end{figure}
+
+The completed larger-sample runs strengthen the same qualitative picture as the formal matrix. Deterministic patch remains the most reliable patch-side baseline, Gaussian patch does not show a consistent planning benefit, and the completed CLS runs remain broadly competitive with patch. However, because the CLS branch is still only partially complete, this section is best treated as corroborating evidence rather than as the paper's primary basis for comparison.
+
+Figure~\ref{fig:largeeval-summary} provides a second view that collects all currently usable larger-sample PointMaze results in one place. Fully completed groups are shown together with the one partially covered CLS-deterministic seed-1 group, which is included only as a partial reference point.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\linewidth]{figure/large_eval_summary.png}
+\caption{Usable larger-sample PointMaze summary across completed and partially completed groups. Completed groups dominate the figure, while the seed-1 CLS-deterministic point is included only as a partial coverage reference.}
+\label{fig:largeeval-summary}
+\end{figure}
+
+\subsection{Why \texttt{success\_rate} Was Not Enough}
+At first, repeated \texttt{success\_rate = 1.0} results looked like a pure sample-size problem. That was correct, but only partially complete. After increasing evaluation coverage, a second issue became clear:
+\begin{itemize}
+\item \texttt{success\_rate} often remained saturated
+\item \texttt{mean\_state\_dist} still showed meaningful variation
+\end{itemize}
+
+The evaluation problem therefore has two layers:
+\begin{enumerate}
+\item small \(n\_\text{evals}\) makes the binary success metric statistically weak
+\item even with larger sample size, the PointMaze success metric is still too coarse
+\end{enumerate}
+
+Accordingly, the most defensible reporting strategy is to use \texttt{mean\_state\_dist} as the primary planning metric and treat \texttt{success\_rate} only as a coarse indicator.
+
+\subsection{Cross-Environment Sanity Checks}
+To test whether the local planning stack generalized beyond PointMaze, we also ran pretrained planning sanity checks on Wall and PushT. The completed runs are summarized in Figure~\ref{fig:crossenv}.
+These runs are best interpreted as feasibility checks for the local planning stack, not as a second controlled benchmark comparable to the PointMaze ablation matrix.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.82\linewidth]{figure/cross_env_sanity.png}
+\caption{Completed cross-environment pretrained planning runs. Reduced- and medium-budget PushT runs are not plotted because they stalled before \texttt{final\_eval}.}
+\label{fig:crossenv}
+\end{figure}
+
+The completed cross-environment runs support the following interpretation:
+\begin{itemize}
+\item Wall passes cleanly under both a light local budget and a stronger local budget.
+\item PushT fails under an aggressively reduced budget.
+\item PushT improves under a medium budget but still stalls.
+\item PushT succeeds once the planning budget is made much closer to the official configuration.
+\end{itemize}
+
+Taken together, these runs suggest that the earlier PushT failures were primarily caused by underpowered planning budgets rather than by a fundamentally broken local setup.
+
+\subsection{Exploratory Encoder Comparisons}
+The original project plan was broader than the completed core matrix, and a parallel exploratory branch also tested additional PointMaze encoders under a different local recipe. The currently available exported runs include one DINOv2 patch reference, one VFM-VAE run, and one V-JEPA2 run. These runs are informative because they reconnect the final paper to the initial broader representation agenda, but they should not be treated as part of the paper's primary controlled evidence.
+
+\begin{table}[h]
+\centering
+\caption{Exploratory PointMaze encoder comparison from the broader project plan.}
+\label{tab:exploratory-encoders}
+\begin{tabular}{lccc}
+\toprule
+Encoder & Train status & Final state distance & Success rate \\
+\midrule
+DINOv2 patch & crashed export & 5.1009 & 1.0000 \\
+VFM-VAE & crashed export & 4.2407 & 0.9375 \\
+V-JEPA2 & crashed export & 4.3022 & 0.6250 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The interpretation of Table~\ref{tab:exploratory-encoders} is intentionally cautious. On the planning side, both VFM-VAE and V-JEPA2 reached completed PointMaze evaluations, and both improved over the exploratory DINOv2 reference in \texttt{mean\_state\_dist}. However, the associated training runs were exported from W\&B with \texttt{crashed} status, and their configuration differs from the main paper recipe. These results therefore show that the broader representation agenda is experimentally viable, but they do not alter the paper's main conclusion, which still rests on the completed controlled PointMaze patch/CLS matrix.
+
+Figure~\ref{fig:exploratory-encoders} visualizes the same exploratory comparison. The bars show \texttt{mean\_state\_dist}, while the overlaid line shows \texttt{success\_rate}. This makes the exploratory result easier to interpret at a glance: the broader encoder agenda has already produced non-trivial PointMaze outcomes, but the evidence remains preliminary rather than formally comparable to the core matrix.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.88\linewidth]{figure/exploratory_encoder_comparison.png}
+\caption{Exploratory PointMaze encoder comparison from the broader project plan. Bars show \texttt{mean\_state\_dist}; the line shows \texttt{success\_rate}. These runs are useful for motivating the broader encoder agenda, but they remain exploratory rather than primary evidence.}
+\label{fig:exploratory-encoders}
+\end{figure}
+
+\section{Discussion}
+The current evidence supports a narrower conclusion than the original hypothesis, but in a useful way. We expected patch structure to clearly dominate CLS. Instead, CLS remained competitive on PointMaze under the present training budget and evaluation regime. At the same time, the Gaussian extension improved training losses more than it improved planning quality. This outcome reinforces the value of a controlled ablation setup: even modest architectural changes can produce results that differ from the initial intuition.
+
+One plausible explanation is that the Gaussian objective helps local next-step fitting more than downstream multi-step planning. In other words, better likelihood-style training losses do not necessarily imply better rollout behavior under MPC, especially when planning quality depends on compounding prediction errors rather than on one-step reconstruction accuracy alone.
+
+Another plausible explanation for the competitive CLS results is task simplicity. PointMaze is visually and geometrically simpler than manipulation settings such as PushT, so a compact global representation may already preserve enough control-relevant information for planning. A more visually complex environment may widen the gap between CLS and spatial patch representations, which is one reason we treat the present result as PointMaze-specific evidence rather than as a universal statement about encoder design.
+
+More broadly, the completed study should be read as the first solid slice of a larger representation project rather than as the entire original agenda. The current paper answers that larger question only partially, but in a controlled and defensible way: it first resolves how far one can go by changing representation granularity within DINOv2 itself and by testing a lightweight stochastic extension. The exploratory VFM-VAE and V-JEPA2 results fit naturally into that picture. They do not yet have the same level of control or reproducibility as the paper's main matrix, but they show that the broader encoder-comparison agenda is technically reachable and potentially empirically interesting.
+
+\section{Limitations}
+\begin{itemize}
+\item The main controlled study is still PointMaze-centric.
+\item CLS uses no decoder, so decoder-side comparisons are unavailable.
+\item The larger-sample follow-up is intentionally asymmetric: the patch branch is much cleaner than the CLS branch, so it is treated as supporting evidence rather than as a second formal matrix.
+\item Even after the larger-sample follow-up, \texttt{success\_rate} remains partially saturated on PointMaze.
+\item The formal matrix uses a short \(3\)-epoch training budget, so some representation differences may be underestimated or may change under longer training.
+\item The exploratory VFM-VAE and V-JEPA2 results come from a different and less controlled recipe, and their associated training runs were exported with \texttt{crashed} status.
+\end{itemize}
+
+\section{Future Work}
+The most important next step is to strengthen the evidence around the paper's central representation result by completing the larger-sample CLS branch under the same planning budget used for the patch branch. A second priority is to test whether the current patch-versus-CLS conclusion is specific to the low-budget training regime used in the formal matrix. A small scaling study that compares only patch-deterministic and CLS-deterministic models under longer training would directly test whether the observed gap remains small once optimization is allowed to run further.
+
+Once that controlled PointMaze core is strengthened, the project can return to its broader representation agenda. The most natural next encoder comparisons are predictive representations such as V-JEPA-style latents and reconstructive or tokenizer-based latents such as VFM-VAE, ideally under the same controlled recipe used for the current matrix. The Gaussian line should also be extended only if uncertainty is actually used at planning time. At present, the Gaussian predictor changes the training objective but planning still relies on the mean prediction \(\mu\), so more informative follow-up would involve uncertainty-aware rollout or planning objectives, or a targeted comparison on a more visually demanding environment such as PushT.
+
+\section{Conclusion}
+This project turns the original DINO-WM course-project idea into a working experimental study. We reproduced the pretrained PointMaze baseline, ran a complete three-seed \( \text{patch/CLS} \times \text{deterministic/Gaussian} \) matrix, and added a larger-sample planning follow-up that made the final comparison more defensible. In that sense, the paper delivers the controlled first phase of a broader representation-study agenda rather than exhausting the full original plan.
+
+The final practical conclusions are:
+\begin{itemize}
+\item DINOv2 patch plus deterministic dynamics remains the most reliable completed baseline.
+\item DINOv2 CLS plus deterministic dynamics is more competitive than originally expected on PointMaze.
+\item The Gaussian extension improves training losses but does not show a stable planning advantage.
+\item Wall pretrained planning succeeds under the local setup.
+\item PushT becomes viable only when the planning budget is much closer to the official configuration.
+\end{itemize}
+
+The most important methodological lesson is that evaluation quality matters as much as model design. Increasing \(n\_\text{evals}\) was necessary, but it did not fully solve metric saturation. As a result, \texttt{mean\_state\_dist} provides the strongest basis for the paper's final representation and dynamics conclusions. At the same time, the exploratory VFM-VAE and V-JEPA2 results suggest that the broader encoder-comparison plan remains worth pursuing after the controlled PointMaze core is fully stabilized.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

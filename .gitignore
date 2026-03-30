@@ -2,3 +2,6 @@ __pycache__
 *.pyc
 outputs
 plan_outputs
+logs/
+Sync/
+tmp_osf_bmw48.html

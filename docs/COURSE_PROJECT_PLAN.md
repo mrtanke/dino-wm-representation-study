@@ -62,6 +62,22 @@ Possible additions:
 
 This layer is not implemented yet and should only be attempted after Layer B is complete.
 
+Feasibility snapshot as of the current local pass:
+
+- `DINOv3`:
+  blocked by Python `3.9` compatibility in the validated WSL environment
+- `V-JEPA`:
+  the only branch that has progressed into real encoder-level integration work
+- `DINO-Tok`:
+  still only a paper-level target in the current workspace; no verified official local code or checkpoint path has been established
+- `VFM-VAE`:
+  now upgraded from paper-level to code-available, but still not near-term drop-in:
+  - official repo identified:
+    `https://github.com/tianciB/VFM-VAE`
+  - official model page identified:
+    `https://huggingface.co/tiancibi/VFM-VAE`
+  - integration cost remains high because the release is a VAE/tokenizer system rather than a simple frozen encoder package
+
 ## 3. Research Questions
 
 ### Q1. Representation
@@ -101,6 +117,146 @@ Current answer:
 ## 4. Scope Control
 
 The original proposal listed many encoders. That is useful as a long-term map, but not all of it belongs in the first complete deliverable.
+
+## 5. Teammate Workstream
+
+This section records the parallel line of work contributed by the teammate branch so the final report can clearly separate:
+
+- the core completed course-project evidence
+- the exploratory encoder-expansion direction
+- the still-pending experiments whose numeric results will be filled in later
+
+### 5.1 Main Research Direction
+
+The teammate workstream extends beyond the minimum `patch/CLS x deterministic/Gaussian` course-project matrix. Its main direction is:
+
+1. keep the DINO-WM planning pipeline runnable in the local WSL environment
+2. expand the representation study toward additional encoders
+3. turn experiments into a paper-ready workflow with scripts, figures, and tracking docs
+
+In practice, this means the teammate line is less about changing the scientific question of the minimum project and more about broadening the experimental platform around it.
+
+### 5.2 Main Areas of Contribution
+
+The teammate branch appears to have contributed in five concrete areas:
+
+1. local experiment infrastructure
+   - WSL configs for training and planning
+   - shell scripts for PointMaze matrix runs, large-eval closeout, and sanity checks
+2. project documentation and experiment tracking
+   - execution logs
+   - experiment tracker tables
+   - project README and course-report draft structure
+3. paper asset generation
+   - report draft
+   - figure generation script
+   - report figures and bibliography scaffolding
+4. extended encoder exploration
+   - `SigLIP2` integration scaffolding
+   - `V-JEPA` integration scaffolding
+5. broader representation roadmap
+   - moving the repository from a narrow PointMaze ablation setup toward a more general representation-study workspace
+
+### 5.3 Teammate Experimental Themes
+
+Based on the branch structure and added files, the teammate experimental agenda includes:
+
+- the same core PointMaze study:
+  `DINOv2 patch` vs `DINOv2 CLS`
+- the same latent-dynamics study:
+  `deterministic` vs `Gaussian`
+- larger-sample planning closeout on PointMaze
+- cross-environment sanity on `Wall` and `PushT`
+- exploratory later-encoder directions:
+  `V-JEPA`
+  `SigLIP2`
+  and the longer-horizon roadmap toward additional encoder families
+
+### 5.4 Teammate Experimental Status
+
+The following status summary should be treated as structural until numeric results are filled in:
+
+- core PointMaze ablation support:
+  implemented
+- large-eval closeout support:
+  implemented in scripts, partially completed in execution
+- cross-environment sanity support:
+  implemented and qualitatively explored
+- later-encoder expansion:
+  exploratory scaffolding exists, but this is not part of the minimum defensible course-project result
+
+### 5.5 Current Numeric Fill-In From `sync_data`
+
+The teammate `AwesomeGNN/sync_data` export now provides one exploratory PointMaze encoder comparison set. These results are useful, but they should still be treated as exploratory rather than merged into the paper's primary controlled evidence.
+
+Training-side exported runs:
+
+- `DINOv2 patch exploratory reference`
+  - W\&B state:
+    `crashed`
+  - last logged train loss:
+    `0.0049`
+  - last logged val loss:
+    `0.0051`
+  - last logged val visual rollout error:
+    `0.0585`
+- `VFM-VAE`
+  - W\&B state:
+    `crashed`
+  - last logged train loss:
+    `0.0151`
+  - last logged val loss:
+    `0.0126`
+  - last logged val visual rollout error:
+    `0.1553`
+- `V-JEPA2`
+  - W\&B state:
+    `crashed`
+  - last logged train loss:
+    `0.0903`
+  - last logged val loss:
+    `0.0836`
+  - last logged val visual rollout error:
+    `0.2747`
+
+Planning-side exported runs:
+
+- `DINOv2 patch exploratory reference`
+  - status:
+    `finished`
+  - `n_evals=16`
+  - `mean_state_dist=5.1009`
+  - `mean_visual_dist=0.4662`
+  - `success_rate=1.0`
+- `VFM-VAE`
+  - status:
+    `finished`
+  - `n_evals=16`
+  - `mean_state_dist=4.2407`
+  - `mean_visual_dist=0.4632`
+  - `success_rate=0.9375`
+- `V-JEPA2`
+  - status:
+    `finished`
+  - `n_evals=16`
+  - `mean_state_dist=4.3022`
+  - `mean_visual_dist=0.4923`
+  - `success_rate=0.625`
+
+Interpretation:
+
+- these numbers show that the later-encoder branch is no longer only a plan; it has already produced preliminary PointMaze runs
+- however, the training jobs are marked `crashed` in W\&B, and the run recipe differs from the paper's main controlled matrix
+- therefore these results should be reported as exploratory single-run encoder comparisons, not as replacements for the formal `patch/CLS x deterministic/Gaussian` core study
+
+### 5.6 How To Use This In The Final Report
+
+When integrating teammate work into the paper, use the following interpretation:
+
+- treat the completed PointMaze matrix as the primary evidence
+- treat larger-sample closeout as supporting evidence
+- treat `Wall` and `PushT` as sanity or transfer checks unless fully controlled comparisons are available
+- treat `SigLIP2` / `V-JEPA` as exploratory expansion unless complete, reproducible runs and metrics are available
 
 ### Implemented scope
 
@@ -297,13 +453,15 @@ Completed:
 - `seed0 patch + gaussian`
 - `seed0 CLS + gaussian`
 - `seed1 patch + deterministic`
+- `seed1 patch + gaussian`
+- `seed1 CLS + gaussian`
+- `seed2 patch + deterministic`
+- `seed2 patch + gaussian`
 - `seed1 CLS + deterministic`, shard B only
 
 Pending:
 
-- `seed1 patch + gaussian`
-- `seed1 CLS + gaussian`
-- all four `seed2` settings
+- `seed2 CLS + gaussian`
 
 Status:
 
@@ -314,6 +472,36 @@ Important decision:
 - `seed1 CLS + deterministic` was attempted twice on shard A and completed once on shard B
 - because shard A repeatedly failed to finish cleanly, this group is now treated as dropped for the larger-sample follow-up
 - do not spend more time on shard-A reruns for this setting
+- `seed2 CLS + deterministic` shard A was also stopped after stalling without `final_eval`
+- this seed-2 CLS branch is now optional unfinished work, not a blocker for closeout
+
+### Stage 4. Encoder-3 and Encoder-4 Integration
+
+Purpose:
+
+- extend the project beyond the completed `DINOv2 patch / CLS` core without reopening the entire experimental matrix at once
+
+Current local read:
+
+- `DINOv3`:
+  checked and blocked in Python `3.9`
+- `V-JEPA`:
+  checkpointed and partially validated, but still not exposed through an encoder-only wrapper compatible with the local DINO-WM training stack
+
+Immediate next step:
+
+- prefer `V-JEPA` encoder-only integration over any further work on `DINOv3`
+- defer `DINO-Tok`
+- keep `VFM-VAE` as a documented but higher-cost fallback after `V-JEPA`, not as the next local experiment
+
+Latest practical evidence:
+
+- the smaller Hugging Face `V-JEPA vitl` checkpoint is now a better local bridge than the earlier giant-only route
+- the official `encoder` weights from `facebook/vjepa2-vitl-fpc64-256` were remapped into `transformers.VJEPA2Model` with zero missing encoder keys
+- the same remapped encoder also completed a minimal CPU forward pass and returned patch-style latent tensors of shape `(1, 256, 1024)` for a `(1, 2, 3, 256, 256)` dummy video input
+- `VFM-VAE` has now advanced from "repo found" to "repo plus checkpoint structure inspected", but it still looks like a heavier system-level integration than `V-JEPA`
+- `seed2 CLS + gaussian` shard A was attempted twice and also failed to reach `final_eval`
+- do not continue the remaining seed-2 CLS branch in the main closeout path
 
 ### Stage 4. Final Analysis and Write-Up
 
@@ -355,6 +543,81 @@ Status:
 
 - deferred
 
+## 6.1 Encoder-3 and Encoder-4 Ownership Plan
+
+The original `DINOv2 patch` and `DINOv2 CLS` branches are already being handled elsewhere. The next local workstream is therefore focused on the third and fourth encoder slots only.
+
+Assigned scope for this branch:
+
+- encoder 3:
+  `DINOv3 patch`
+- encoder 4:
+  `V-JEPA`
+- tasks:
+  `point_maze` and `wall_single`
+- training target:
+  `10 epochs`
+- evaluation target:
+  local planning plus shard-based larger-sample follow-up
+
+Decision rule for this branch:
+
+- start with `deterministic` only
+- do not add Gaussian for the new encoders until deterministic training and planning both work on both tasks
+
+Execution order:
+
+1. feasibility check for `DINOv3`
+2. feasibility check for `V-JEPA`
+3. `point_maze` deterministic sanity for each new encoder
+4. `wall_single` deterministic sanity for each new encoder
+5. `10 epoch` deterministic runs on both tasks
+6. local planning evaluation plus two-shard larger-sample follow-up
+
+Minimum experiment matrix for encoder 3 and 4:
+
+- `DINOv3 patch + deterministic + point_maze`
+- `DINOv3 patch + deterministic + wall_single`
+- `V-JEPA + deterministic + point_maze`
+- `V-JEPA + deterministic + wall_single`
+
+Estimated time for this branch:
+
+- DINOv3 integration and sanity:
+  about `2` to `4` hours
+- V-JEPA integration and sanity:
+  about `3` to `6` hours
+- four deterministic `10 epoch` runs across two tasks:
+  about `4` to `12` hours
+- local planning evaluation:
+  about `4` to `10` hours
+
+Total estimate for encoder-3 and encoder-4 deterministic coverage:
+
+- about `11` to `28` hours
+
+Current feasibility snapshot:
+
+- `DINOv3 patch`
+  - status:
+    `blocked`
+  - blocker:
+    the official `facebookresearch/dinov3` hub path currently fails under Python `3.9` because it uses Python `3.10+` union syntax such as `float | None`
+  - near-term handling:
+    do not start the `10 epoch` DINOv3 branch until there is a Python-version-compatible loading path
+
+- `V-JEPA`
+  - status:
+    `active feasibility`
+  - blocker:
+    the official `facebookresearch/jepa-wms` hub path now reaches model construction, but stops because it expects the opensource V-JEPA visual checkpoint at `${JEPAWM_OSSCKPT}/vjepa2_opensource/vjepa2_vit_giant.pth`
+  - checkpoint note:
+    the official V-JEPA v2 opensource encoder files are large; the public `vitl.pt` checkpoint is about `5.1 GB`, and the `vitg.pt` checkpoint is about `16.5 GB`
+  - near-term handling:
+    decide whether to prepare the required opensource checkpoint locally; if yes, continue with latent-shape verification and a deterministic sanity run after the checkpoint is in place
+  - current active step:
+    local provisioning of the required V-JEPA v2 giant checkpoint is in progress so that the next experiment can move from dependency cleanup to actual encoder loading
+
 ## 7. Current Evidence
 
 ### Formal matrix summary
@@ -373,7 +636,7 @@ Current larger-sample results suggest:
 - `mean_state_dist` is more informative than `success_rate`
 - `patch + deterministic` remains strongest overall
 - `CLS + gaussian` can beat `patch + gaussian` on at least some seed-0 follow-up
-- the main open question is whether these patterns remain stable after finishing seed-1 and seed-2 reevaluation
+- the main open question is now whether spending more time on the optional seed-2 CLS follow-up would materially change the report conclusions
 
 ## 8. What Counts as Success
 
@@ -402,8 +665,6 @@ The project becomes ambitious if it additionally includes:
 
 ### Immediate
 
-- complete larger-sample reevaluation for the remaining `seed1` settings that are still active
-- complete larger-sample reevaluation for all `seed2` settings
 - aggregate larger-sample metrics into report-ready tables
 
 ### Near-term
@@ -419,16 +680,14 @@ The project becomes ambitious if it additionally includes:
 
 For the current plan, not the long-horizon vision:
 
-- remaining `seed1` larger-sample follow-up after dropping `seed1 CLS + deterministic` shard-A reruns:
+- optional seed-2 Gaussian CLS follow-up:
   about `0.5` to `1.0` hour
-- full `seed2` larger-sample follow-up:
-  about `1.0` to `1.5` hours
 - aggregation and document cleanup:
   about `0.5` to `1.0` hour
 
 Estimated total remaining time for the current deliverable:
 
-- about `2.0` to `3.5` hours
+- about `0.5` to `1.0` hour if the project closes after patch-focused reevaluation
 
 For the extended vision:
 
@@ -443,3 +702,340 @@ For the extended vision:
 3. Present `DINOv3`, `V-JEPA`, `DINO-Tok`, and `VFM-VAE` as future extensions unless they are actually implemented and run.
 4. Use `mean_state_dist` as the primary planning comparison metric.
 5. Keep the final write-up conservative about what the data currently supports.
+6. Current operating mode: closeout-first.
+7. Do not let optional CLS follow-up block report completion.
+
+## 12. Collaboration Paths
+
+The project is now at a stage where several different technical directions are all reasonable. A collaborator does not need to pick up the whole pipeline to make progress.
+
+### Path A: Final Evaluation and Metric Quality
+
+Examples:
+
+- summarize planning outcomes with `mean_state_dist` as the main metric
+- clearly label the seed-2 CLS branch as optional unfinished work
+- turn the completed reevaluation results into final tables and concise report language
+
+### Path B: Expanded Encoder Route
+
+Examples:
+
+- try one additional representation family, preferably `DINOv3` or `V-JEPA`
+- focus on a minimum viable path:
+  - encoder integration
+  - latent compatibility
+  - one sanity training run
+  - one sanity planning run
+- record what extra engineering work that encoder requires relative to DINOv2
+
+### Path C: Results Consolidation and Final Writing
+
+Examples:
+
+- build one clean final table for the formal matrix
+- build one clean final table for the larger-sample follow-up
+- compute and verify shard-based averages
+- align the README, tracker, execution log, and report wording
+- refine the abstract, conclusion, and limitations
+
+### Path D: Reproducibility and Sync
+
+Examples:
+
+- verify that scripts and commands still match the tracker
+- prepare a short rerun guide for the main completed experiments
+- sync the latest docs and status updates to the collaboration repository
+
+## 13. One-Week Innovation Options Beyond Additional Encoders
+
+If the project window is only about one week, the most useful innovation is not necessarily "add more encoder names". A better rule is to prefer small extensions that produce a clearer new conclusion.
+
+### 13.1 Highest-Value Low-to-Medium-Risk Options
+
+#### A. Uncertainty-Aware Planning
+
+Current Gaussian work changes the training objective, but planning still mostly follows the mean prediction. A stronger extension would let uncertainty influence planning directly.
+
+Examples:
+
+- penalize high-variance rollouts during planning
+- compare risk-neutral and risk-averse planning
+- check whether uncertainty helps mainly at longer horizons
+
+Why this is attractive:
+
+- it builds directly on the implemented Gaussian predictor
+- it adds a real methodological contribution rather than just another loss
+- it is lighter than integrating a completely new representation family
+
+#### B. Horizon-Sensitivity Analysis
+
+Another good one-week contribution is to study how different representations or dynamics variants degrade as rollout horizon grows.
+
+Examples:
+
+- compare short-horizon and long-horizon latent prediction error
+- compare planning quality as horizon increases
+- test whether Gaussian uncertainty becomes more meaningful at larger horizon
+
+Why this is attractive:
+
+- low engineering overhead
+- easy to explain in the final report
+- directly relevant to world-model usefulness
+
+#### C. Robustness Evaluation
+
+Instead of only asking which representation is best under clean inputs, test which one is more stable under simple perturbations.
+
+Examples:
+
+- observation noise
+- brightness or crop perturbations
+- frame drop
+- action noise
+
+Why this is attractive:
+
+- the implementation burden is modest
+- results are often easier to interpret than adding one more large encoder
+- it broadens the contribution without changing the core pipeline
+
+### 13.2 Medium-Risk Representation-Focused Extensions
+
+#### D. Spatial-Structure Middle Ablations
+
+Between patch tokens and CLS token there is a useful middle ground.
+
+Examples:
+
+- pooled patch groups
+- reduced patch grids
+- masked or subsampled patches
+
+Why this is attractive:
+
+- it gives a cleaner answer to how much spatial structure planning actually needs
+- it is usually cheaper than integrating a completely different external model
+
+### 13.3 Higher-Risk Options
+
+#### E. Additional Encoder Families
+
+This includes:
+
+- `DINOv3`
+- `V-JEPA`
+- `DINO-Tok`
+- `VFM-VAE`
+
+These can still be worth doing, but they are no longer the only or even the best innovation path for a short project. Their main cost is integration complexity, environment preparation, and checkpoint management.
+
+### 13.4 Recommended Priority For A One-Week Project
+
+If time is limited, the recommended innovation priority is:
+
+1. `uncertainty-aware planning`
+2. `horizon-sensitivity analysis`
+3. `robustness evaluation`
+4. `one new encoder family`
+
+Practical interpretation:
+
+- if the goal is a clear, defensible project contribution, the first three are often better than trying to integrate many new foundation models
+- if the goal is a third and fourth encoder branch specifically, then `DINOv3` and `V-JEPA` remain the most reasonable choices, but they should be treated as heavier engineering tasks
+
+## 2026-03-27 V-JEPA Integration Status
+
+Current repository-level progress:
+
+- `models/vjepa.py`
+- `conf/encoder/vjepa.yaml`
+- `conf/train_vjepa_wsl.yaml`
+
+Smoke-test result:
+
+- image input: `(2, 3, 224, 224)`
+- encoder output: `(2, 196, 1024)`
+
+Current practical blocker:
+
+- the WSL `dino_wm` environment currently has `transformers==4.21.1`
+- the same environment currently has `huggingface_hub==1.8.0`
+- this currently breaks `transformers` import in that environment
+
+So the next real step for encoder 4 is not more feasibility probing; it is refreshing the WSL package stack so the prepared `1 epoch` sanity config can actually run.
+
+## 2026-03-27 Later-Encoder Execution Update
+
+The WSL package stack was refreshed for later-encoder work:
+
+- `transformers==4.57.6`
+- `huggingface_hub==0.36.0`
+- `tokenizers==0.22.1`
+
+This cleared the earlier import blocker for both `V-JEPA` and `SigLIP2`.
+
+### V-JEPA
+
+Execution status:
+
+- `models/vjepa.py` works inside WSL
+- `conf/train_vjepa_wsl.yaml` was launched successfully
+- the run entered the real `point_maze` training loop
+
+Observed runtime:
+
+- about `20 minutes` to reach roughly `4%` of epoch 1
+- estimated epoch-1 remainder around `7 hours`
+- projected `10 epoch` runtime around `3` to `3.5` days
+
+Decision:
+
+- the run was stopped manually
+- reason: the training path is now proven, but the runtime is currently not practical for local iteration
+
+### SigLIP2
+
+New repo path:
+
+- `models/siglip2.py`
+- `conf/encoder/siglip2.yaml`
+- `conf/train_siglip2_wsl.yaml`
+
+Execution status:
+
+- WSL smoke test returns `(1, 196, 1024)`
+- the `point_maze` `1 epoch` sanity run was launched successfully
+- it was then stopped manually to free the GPU
+
+Interpretation:
+
+- `SigLIP2` is currently the lightest practical later-encoder route that has already crossed into actual local training execution
+
+### VFM-VAE
+
+Current code-compatibility status:
+
+- `networks.utils.vfm_utils` imports successfully
+- `networks.generator` exposed a Python-3.10-style union annotation in `convnext_utils.py`
+- that specific local syntax blocker was patched to a Python-3.9-compatible form in the local cache copy
+
+Interpretation:
+
+- `VFM-VAE` is now in compatibility-cleanup mode rather than discovery mode
+- the next step is a clean generator import retry and then a minimal encoder extraction attempt
+
+## 2026-03-29 Post-Review Prioritization And Collaboration Plan
+
+The latest paper review reinforces the same conclusion as the earlier closeout review: the highest-value next step is to strengthen the current PointMaze representation claim before opening new encoder branches.
+
+### A. Updated Experiment Priority
+
+Priority order:
+
+1. finish the missing larger-sample `seed-2 CLS + deterministic` PointMaze rerun
+2. if that run completes cleanly, finish the missing `seed-1 CLS + deterministic` shard-A rerun
+3. after the CLS larger-sample closeout, run a small training-budget extension only for:
+   - `patch + deterministic`
+   - `CLS + deterministic`
+4. only after those steps, consider one higher-value extension:
+   - `PushT patch-det vs CLS-det`
+   - or uncertainty-aware planning for the Gaussian branch
+
+Why this order:
+
+- the paper's strongest current result is that `CLS + deterministic` is surprisingly competitive with `patch + deterministic` on PointMaze
+- that claim is currently weakened by incomplete larger-sample CLS coverage
+- a narrow training-budget extension answers a more scientifically useful question than another heavy encoder integration:
+  - whether `CLS` is competitive only under the current low-budget regime
+- `PushT` and uncertainty-aware planning are better substantive extensions than opening another slow or blocked encoder line
+
+### B. Paper-Facing Interpretation
+
+The review also sharpens how the paper should frame its claims:
+
+- the main result should remain the formal PointMaze matrix
+- the larger-sample follow-up should be treated as supporting evidence, not as a second perfectly symmetric benchmark
+- the paper should state its main representation conclusion under the current PointMaze training and evaluation budget
+- the Gaussian story should be framed more narrowly:
+  - the current implementation tests a Gaussian likelihood head with mean-based planning
+  - it does not yet test fully uncertainty-aware planning
+
+### C. Three-Person Collaboration Split
+
+The remaining work now supports a clean three-way split without duplication.
+
+Person 1: Closeout Experiments
+
+- monitor the live `P1_plan_retry` run
+- if successful, launch the missing `seed-1 CLS + deterministic` shard-A rerun
+- collect final `mean_state_dist` and `success_rate` summaries for the CLS branch
+
+Person 2: Analysis And Paper Cleanup
+
+- convert the completed formal matrix and larger-sample follow-up into final paper tables
+- add `mean ± std` where available
+- make `mean_state_dist` the primary planning metric throughout the report
+- tighten wording so `formal matrix` = main result and `larger-sample` = supporting evidence
+
+Person 3: One Focused Extension
+
+- do not open a broad new encoder branch yet
+- choose exactly one extension after the CLS closeout:
+  - a small `3 vs 10` or `3 vs 10 vs 20` training-budget comparison for `patch-det` vs `CLS-det`
+  - or a PushT `patch-det` vs `CLS-det` comparison
+  - or a lightweight uncertainty-aware planning extension for the Gaussian branch
+
+### D. Explicit De-Prioritization
+
+The following directions remain valid long-term, but they are no longer the best next moves for the course-project finish:
+
+- `DINOv3`
+- full `V-JEPA` training
+- broad multi-encoder expansion
+
+Reason:
+
+- they cost substantial engineering time
+- they do not strengthen the current main paper claim as directly as finishing the CLS closeout and one narrow follow-up experiment
+
+## 2026-03-29 Final 1.5-Day Plan
+
+With only about `1.5` days left, the plan is reduced again to the shortest path that can still materially improve the paper.
+
+### Highest-Yield Experiments
+
+1. rerun `seed-2 CLS + deterministic` PointMaze large-eval shard with a more robust background launcher
+2. if and only if that finishes cleanly, rerun `seed-1 CLS + deterministic` missing shard
+3. if there is still time, do the smallest useful training-budget extension:
+   - resume `seed-0 patch + deterministic`
+   - resume `seed-0 CLS + deterministic`
+   - extend from the existing `3 epoch` checkpoints to `5 epoch`
+
+### Why These Three
+
+- they directly strengthen the paper's main claim about `CLS + deterministic`
+- they avoid opening a new encoder branch with low odds of helping the final writeup
+- the `3 -> 5 epoch` resume path is much cheaper than launching a brand-new long training sweep
+
+### Explicitly Dropped For The Final 1.5 Days
+
+- `DINOv3`
+- new `V-JEPA` training
+- broad multi-encoder expansion
+- full PushT controlled study
+- uncertainty-aware planner redesign
+
+### Success Criteria
+
+- best case:
+  - one completed `seed-2 CLS-det` large-eval rerun
+  - one completed `seed-1 CLS-det` rerun
+  - one minimal `3 -> 5 epoch` `patch-det` vs `CLS-det` extension
+- acceptable case:
+  - finish `seed-2 CLS-det`
+  - finish one of:
+    - `seed-1 CLS-det`
+    - or the `3 -> 5 epoch` extension

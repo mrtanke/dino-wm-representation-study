@@ -1,4 +1,15 @@
 import os
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+# Preload the repo-local datasets package before any third-party library can
+# populate sys.modules["datasets"] with Hugging Face datasets.
+import datasets  # noqa: F401
+
 import gym
 import json
 import hydra
@@ -11,7 +22,6 @@ import warnings
 import numpy as np
 import submitit
 from itertools import product
-from pathlib import Path
 from einops import rearrange
 from omegaconf import OmegaConf, open_dict
 
