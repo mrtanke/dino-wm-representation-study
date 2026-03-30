@@ -1,94 +1,65 @@
 # DINO-WM Course Project
 
-Course-project extension of DINO-WM focused on two questions:
+Course-project extension of DINO-WM on PointMaze, centered on two questions:
 
-1. Representation:
-   `DINOv2 patch` vs `DINOv2 CLS`
-2. Dynamics:
-   `deterministic` vs `gaussian` latent transition models
+1. Does `DINOv2 patch` remain stronger than `DINOv2 CLS` for action-conditioned world modeling?
+2. Does a lightweight `gaussian` latent transition improve planning over the original `deterministic` predictor?
 
-This README is the collaboration homepage for the current project state: vision, progress, key results, remaining work, and ownership-ready next steps.
+This repository contains the engineering code, experiment artifacts, and paper materials for our final project study.
 
-## Project Vision
+## Overview
 
-Keep the original DINO-WM pipeline fixed:
+We keep the original DINO-WM pipeline fixed:
 
 `image encoder -> latent transition model -> planning`
 
-Then answer two practical questions for action-conditioned world modeling on PointMaze:
+Within that pipeline, the completed project is organized as two complementary studies:
 
-- Does spatially structured `DINOv2 patch` still matter compared with the compressed `DINOv2 CLS` representation?
-- Does a lightweight stochastic extension improve planning quality over the original deterministic latent dynamics?
+- `Experiment I`: encoder comparison under a shared PointMaze recipe
+- `Experiment II`: within-DINOv2 ablation on `patch/CLS` and `deterministic/gaussian`
 
-The goal is not to rebuild the whole paper from scratch, but to produce a defensible course-project study with a clean ablation matrix, reproducible scripts, and conclusions that do not overclaim from weak evaluation.
+The final paper reports both studies while treating `mean_state_dist` as the primary planning metric under the current evaluation regime.
 
-For the full roadmap beyond the current experiment snapshot, see:
+## Team Contributions
 
-- [docs/COURSE_PROJECT_PLAN.md](/C:/Users/zack/Documents/GNN3/docs/COURSE_PROJECT_PLAN.md)
+This repository reflects joint work by:
 
-That document now separates:
+- `Ke Tan`
+- `Weiguo Li`
+- `Zhaokun Wang`
 
-- the minimum defensible course-project scope
-- the stronger empirical validation phase
-- the longer-horizon expanded representation study
+At a high level, the completed project combines:
 
-## Current Status
+- engineering adaptation of DINO-WM for local WSL2-based execution
+- implementation of the Gaussian latent-transition variant
+- PointMaze training and planning experiments
+- encoder-comparison and ablation analysis
+- paper writing, figures, and bibliography curation
 
-### Completed
+## Final Project Scope
 
-- End-to-end DINO-WM setup in WSL2 Ubuntu 24.04
-- Stable local configs for training and planning:
-  - `conf/train_wsl.yaml`
-  - `conf/plan_point_maze_wsl.yaml`
-- Stable DINOv2 loading pinned in `models/dino.py`
-- Gaussian latent-transition extension implemented:
-  - `conf/predictor/vit_gaussian.yaml`
-  - `models/vit.py`
-  - `models/visual_world_model.py`
-- Full sanity matrix completed on PointMaze:
-  - `patch + deterministic`
-  - `CLS + deterministic`
-  - `patch + gaussian`
-  - `CLS + gaussian`
-- Full formal matrix completed:
-  - `3 seeds x 4 settings = 12 runs`
-  - `epochs=3`
-  - `n_rollout=64`
-  - `n_evals=3`
+Implemented and used in the final report:
 
-### In Progress
+- DINO-WM setup and local execution pipeline
+- `DINOv2 patch`
+- `DINOv2 CLS`
+- deterministic latent transition model
+- Gaussian latent transition model
+- PointMaze evaluation
 
-Larger-sample planning reevaluation is being used to replace the saturated `n_evals=3` planning view.
+Also included in the final paper as a completed comparison study:
 
-Completed larger-sample follow-up:
+- `V-JEPA 2`
+- `VFM-VAE / SigLIP2`
 
-- `seed0 patch + deterministic`
-- `seed0 CLS + deterministic`
-- `seed0 patch + gaussian`
-- `seed0 CLS + gaussian`
-- `seed1 patch + deterministic`
-
-Still pending:
-
-- `seed1 CLS + deterministic`
-- `seed1 patch + gaussian`
-- `seed1 CLS + gaussian`
-- all `seed2` larger-sample follow-up runs
-
-### Not Implemented Yet
-
-These were part of the broader proposal, but are not part of the current implemented scope:
+Not part of the completed main evidence base:
 
 - `DINOv3`
-- `V-JEPA`
 - `DINO-Tok`
-- `VFM-VAE`
 
-## Key Results So Far
+## Main Results
 
-### Formal 3-Seed Matrix
-
-The most useful planning metric so far is `mean_state_dist`, because `success_rate` saturates at `1.0` under `n_evals=3`.
+### Formal Three-Seed Matrix
 
 | Setting | Mean train loss | Mean val loss | Mean state dist |
 | --- | ---: | ---: | ---: |
@@ -97,98 +68,47 @@ The most useful planning metric so far is `mean_state_dist`, because `success_ra
 | `DINOv2 patch + gaussian` | `-2.9815` | `-3.1785` | `3.7772` |
 | `DINOv2 CLS + gaussian` | `-3.0751` | `-3.2282` | `3.3277` |
 
-Current interpretation:
+Main takeaways:
 
-- `patch + deterministic` remains the strongest current baseline
-- `CLS + deterministic` is surprisingly competitive on PointMaze
-- Gaussian models improve likelihood-style training losses
-- Gaussian models have not yet shown a planning advantage
+- `DINOv2 patch + deterministic` remains the strongest completed baseline
+- `DINOv2 CLS + deterministic` is more competitive than initially expected
+- Gaussian variants improve likelihood-style training losses
+- those training improvements do not translate into a stable planning gain
 
 ### Larger-Sample Follow-Up
 
-The direct `n_evals=10` evaluation path was unstable in WSL/CUDA, so the current stable fallback is two shards of `n_evals=5`.
+The larger-sample PointMaze follow-up was used to go beyond the saturated `n_evals=3` planning view. Under this follow-up:
 
-Completed larger-sample snapshots:
+- deterministic patch remains the most reliable patch-side baseline
+- `mean_state_dist` is more informative than saturated `success_rate`
+- CLS remains competitive, but coverage is less complete than for the patch branch
 
-- `seed0 patch + deterministic`
-  - direct `n_evals=10`
-  - `mean_state_dist = 3.1738`
-- `seed0 CLS + deterministic`
-  - two-shard average `mean_state_dist ~= 3.5291`
-- `seed0 patch + gaussian`
-  - two-shard average `mean_state_dist ~= 4.3382`
-- `seed0 CLS + gaussian`
-  - two-shard average `mean_state_dist ~= 3.8242`
-- `seed1 patch + deterministic`
-  - two-shard average `mean_state_dist ~= 4.1189`
+## Repository Layout
 
-Current interpretation:
+- [paper/](/C:/Users/zack/Documents/GNN3/paper): paper source, figures, and report materials
+- [docs/](/C:/Users/zack/Documents/GNN3/docs): project notes, execution history, and planning documents
+- [scripts/](/C:/Users/zack/Documents/GNN3/scripts): helper scripts for experiments and analysis
+- [course_project/](/C:/Users/zack/Documents/GNN3/course_project): project-specific code and utilities
 
-- `mean_state_dist` is more informative than `success_rate`
-- `patch + deterministic` still looks best overall
-- `CLS + gaussian` looks better than `patch + gaussian` on seed 0
-- the stochastic extension still does not clearly beat the deterministic baseline in planning
+Important supporting files:
 
-## Estimated Remaining Time
+- [plan.py](/C:/Users/zack/Documents/GNN3/plan.py)
+- [paper/main.tex](/C:/Users/zack/Documents/GNN3/paper/main.tex)
 
-If we continue only the current larger-sample reevaluation plan, the estimated remaining time is:
+## Running the Project
 
-- `seed1` remaining larger-sample follow-up: about `0.5` to `1.0` hour
-- `seed2` full larger-sample follow-up: about `1.0` to `1.5` hours
-- metric aggregation and final doc cleanup: about `0.5` to `1.0` hour
+The local project setup was developed in `WSL2 Ubuntu 24.04` with Python 3.9 and MuJoCo 2.1 compatibility fixes for the original DINO-WM stack.
 
-Estimated total remaining time:
+Project-specific local configs referenced during the study include:
 
-- about `2` to `3.5` hours
+- `conf/train_wsl.yaml`
+- `conf/plan_point_maze_wsl.yaml`
+- `conf/predictor/vit_gaussian.yaml`
 
-This estimate assumes no new model integrations and no major WSL/CUDA instability.
+Additional execution details are documented in:
 
-## Collaboration Notes
-
-If you are joining the project now, start here:
-
-- status and runnable commands:
-  [docs/PROJECT_README.md](/C:/Users/zack/Documents/GNN3/docs/PROJECT_README.md)
-- exact execution history and engineering fixes:
-  [docs/EXECUTION_LOG.md](/C:/Users/zack/Documents/GNN3/docs/EXECUTION_LOG.md)
-- experiment table:
-  [docs/EXPERIMENT_TRACKER.csv](/C:/Users/zack/Documents/GNN3/docs/EXPERIMENT_TRACKER.csv)
-- report draft:
-  [docs/COURSE_REPORT_DRAFT.md](/C:/Users/zack/Documents/GNN3/docs/COURSE_REPORT_DRAFT.md)
-- near-term plan:
-  [docs/COURSE_PROJECT_PLAN.md](/C:/Users/zack/Documents/GNN3/docs/COURSE_PROJECT_PLAN.md)
-
-Recommended working rule:
-
-- treat the current project scope as `patch/CLS x deterministic/gaussian`
-- do not claim anything from `success_rate=1.0` alone
-- use `mean_state_dist` and larger-sample follow-up as the main planning evidence
-
-## Checklist
-
-- [x] WSL2 environment setup
-- [x] Pretrained PointMaze planning sanity check
-- [x] Deterministic patch training and planning
-- [x] Deterministic CLS training and planning
-- [x] Gaussian patch training and planning
-- [x] Gaussian CLS training and planning
-- [x] Full 3-seed formal matrix
-- [x] Seed-0 larger-sample follow-up
-- [x] Seed-1 patch deterministic larger-sample follow-up
-- [ ] Seed-1 CLS deterministic larger-sample follow-up
-- [ ] Seed-1 patch gaussian larger-sample follow-up
-- [ ] Seed-1 CLS gaussian larger-sample follow-up
-- [ ] Seed-2 larger-sample follow-up for all four settings
-- [ ] Final larger-sample aggregation table
-- [ ] Final report wording cleanup
-
-### Target Completion Window
-
-If the current reevaluation plan continues without new blockers:
-
-- remaining larger-sample experiments: within `2` to `2.5` hours
-- final aggregation and document cleanup: within `0.5` to `1.0` hour
-- full current-scope wrap-up: within `2.5` to `3.5` hours
+- [docs/PROJECT_README.md](/C:/Users/zack/Documents/GNN3/docs/PROJECT_README.md)
+- [docs/EXECUTION_LOG.md](/C:/Users/zack/Documents/GNN3/docs/EXECUTION_LOG.md)
 
 ## Acknowledgment
 
@@ -199,11 +119,6 @@ This project builds directly on the original DINO-WM work by:
 - Yann LeCun
 - Lerrel Pinto
 
-Affiliations:
-
-- New York University
-- Meta AI
-
 Original project links:
 
 - Paper: <https://arxiv.org/abs/2411.04983>
@@ -213,6 +128,8 @@ Original project links:
 Please retain attribution to the original authors when sharing derived materials from this course-project extension.
 
 ## Citation
+
+If you want to cite the original DINO-WM work:
 
 ```bibtex
 @article{zhou2024dino,
